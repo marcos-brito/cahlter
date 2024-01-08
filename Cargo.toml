@@ -7,6 +7,14 @@ readme = "README.md"
 license-file = "LICENSE"
 repository = "https://github.com/marcos-brito/cahlter/"
 
+[lib]
+name = "cahlter"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cahlter"
+path = "src/main.rs"
+
 [dependencies]
 askama = "0.12.1"
 pulldown-cmark = "0.9.3"
