@@ -1,0 +1,14 @@
+[package]
+name = "cahlter"
+version = "0.1.0"
+edition = "2021"
+authors = ["Marcos Brito <marcos.brito0507@gmail.com>"]
+readme = "README.md"
+license-file = "LICENSE"
+repository = "https://github.com/marcos-brito/cahlter/"
+
+[dependencies]
+askama = "0.12.1"
+pulldown-cmark = "0.9.3"
+serde = "1.0.195"
+serde_yaml = "0.9.30"
