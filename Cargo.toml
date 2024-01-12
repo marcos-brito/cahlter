@@ -16,6 +16,7 @@ name = "cahlter"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1.0.79"
 askama = "0.12.1"
 pulldown-cmark = "0.9.3"
 serde = {version="1.0.195", features=["derive"]}
