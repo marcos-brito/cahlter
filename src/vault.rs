@@ -2,6 +2,7 @@ pub mod content;
 pub mod summary;
 
 use super::config::Config;
+use anyhow::Result;
 use content::Content;
 use serde_yaml;
 use std::fs;
@@ -33,12 +34,18 @@ impl Vault {
     }
     /// Initialize a new vault at the given path. It also updates the config
     /// so that the title is the name of the directory.
-    pub fn init(&mut self) -> () {
+    pub fn init(&mut self) -> Result<()> {
         let mut new_config = Config::default();
+
+        if Vault::was_initialized(&self.path) {
+            anyhow::bail!("calhter.yml already exists at {}", self.path.display());
+        }
 
         self.create();
         new_config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
         self.config.update(new_config);
+
+        Ok(())
     }
 
     fn create(&self) -> () {
@@ -88,12 +95,22 @@ mod test {
         let temp_dir = tempdir()?;
         let mut vault = Vault::new(temp_dir.path().join("test_vault"));
 
-        vault.init();
+        vault.init()?;
 
         assert!(temp_dir.path().join("test_vault").exists());
         assert!(vault.config.general.title == "test_vault");
 
         Ok(())
+    }
+
+    #[test]
+    #[should_panic(expected = "calhter.yml already exists at")]
+    fn it_should_not_initialize_the_vault_if_it_was_already_initialized() -> () {
+        let temp_dir = tempdir().unwrap();
+        let mut vault = Vault::new(temp_dir.path().join("test_vault"));
+
+        vault.init().unwrap();
+        vault.init().unwrap();
     }
 
     #[test]
@@ -128,7 +145,7 @@ mod test {
         let temp_dir = tempdir()?;
         let mut vault = Vault::new(temp_dir.path().join("test_vault"));
 
-        vault.init();
+        vault.init()?;
 
         assert!(Vault::was_initialized(temp_dir.path().join("test_vault")));
 
