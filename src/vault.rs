@@ -24,6 +24,8 @@ impl Vault {
     where
         P: AsRef<Path>,
     {
+        // FIX: it should first try to read from the disk and only if it fails use the default.
+        // Maybe a from_disk method?
         let config = Config::default();
         let content = Vault::get_content(&path);
 
@@ -45,6 +47,7 @@ impl Vault {
         self.create()?;
         new_config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
         self.config.update(new_config);
+        self.config.save(self.path.join(CONFIG_FILE));
 
         Ok(())
     }
