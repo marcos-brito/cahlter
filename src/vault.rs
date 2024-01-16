@@ -2,7 +2,8 @@ pub mod content;
 pub mod summary;
 
 use super::config::Config;
-use anyhow::Result;
+use crate::util;
+use anyhow::{Context, Result};
 use content::Content;
 use serde_yaml;
 use std::fs;
@@ -41,27 +42,39 @@ impl Vault {
             anyhow::bail!("calhter.yml already exists at {}", self.path.display());
         }
 
-        self.create();
+        self.create()?;
         new_config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
         self.config.update(new_config);
 
         Ok(())
     }
 
-    fn create(&self) -> () {
-        let error_msg = format!(
-            "Could not create directory. Maybe you don't have permission? Maybe a invalid path? {}",
-            self.path.display()
-        );
+    fn create(&self) -> Result<()> {
+        fs::create_dir_all(&self.path).with_context(|| {
+            format!(
+                "Could not create {}. Maybe it's invalid or you don't have permission",
+                &self.path.display()
+            )
+        })?;
 
-        fs::create_dir_all(&self.path).expect(&error_msg);
-        fs::create_dir(self.path.join(BUILD_DIR)).expect(&error_msg);
-        fs::create_dir(self.path.join(SRC_DIR)).expect(&error_msg);
+        util::create_dir_if_not_exists(self.path.join(BUILD_DIR)).with_context(|| {
+            format!("Could not create {}.", self.path.join(BUILD_DIR).display())
+        })?;
+        util::create_dir_if_not_exists(self.path.join(SRC_DIR))
+            .with_context(|| format!("Could not create {}.", self.path.join(SRC_DIR).display()))?;
+
         fs::write(
             self.path.join(CONFIG_FILE),
-            serde_yaml::to_string(&Config::default()).unwrap(),
+            serde_yaml::to_string(&Config::default())?,
         )
-        .expect(&error_msg);
+        .with_context(|| {
+            format!(
+                "Could not create {}.",
+                self.path.join(CONFIG_FILE).display()
+            )
+        })?;
+
+        Ok(())
     }
 
     fn get_content<P>(path: P) -> Option<Content>
@@ -118,7 +131,7 @@ mod test {
         let temp_dir = tempdir()?;
         let vault = Vault::new(temp_dir.path().join("test_vault"));
 
-        vault.create();
+        vault.create()?;
 
         assert!(temp_dir.path().join("test_vault").join("build").exists());
         assert!(temp_dir.path().join("test_vault").join("src").exists());
