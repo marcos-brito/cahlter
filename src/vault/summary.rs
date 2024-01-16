@@ -1,3 +1,7 @@
+mod file_tree_summarizer;
+
+pub use file_tree_summarizer::FileTreeSummarizer;
+
 use super::content::Item;
 use anyhow::Result;
 
