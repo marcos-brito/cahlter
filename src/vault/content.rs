@@ -26,8 +26,6 @@ impl From<Section> for Item {
 }
 
 pub struct Content {
-    pub chapters: Vec<Chapter>,
-    pub sections: Vec<Section>,
     pub summary: Summary,
 }
 
@@ -37,23 +35,17 @@ impl Content {
         P: AsRef<Path>,
     {
         let summary = Content::get_summary(path);
-        let sections = Content::get_sections();
-        let chapters = Content::get_chapters();
 
-        Content {
-            chapters,
-            sections,
-            summary,
-        }
+        Content { summary }
     }
 
     // Just iterate over the summary and filter
-    fn get_chapters() -> Vec<Chapter> {
+    pub fn get_chapters() -> Vec<Chapter> {
         unimplemented!()
     }
 
     // Just iterate over the summary and filter
-    fn get_sections() -> Vec<Section> {
+    pub fn get_sections() -> Vec<Section> {
         unimplemented!()
     }
 
