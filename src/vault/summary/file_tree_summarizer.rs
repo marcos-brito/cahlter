@@ -1,6 +1,6 @@
 use super::Summarizer;
 use crate::{Chapter, Item};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 

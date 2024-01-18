@@ -2,8 +2,9 @@ mod file_tree_summarizer;
 
 pub use file_tree_summarizer::FileTreeSummarizer;
 
-use super::content::Item;
 use anyhow::Result;
+
+use crate::Item;
 
 pub trait Summarizer {
     fn summarize(&self) -> Result<Vec<Item>>;

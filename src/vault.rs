@@ -1,13 +1,15 @@
 pub mod content;
 pub mod summary;
 
-use super::config::Config;
-use crate::util;
-use anyhow::{Context, Result};
-use content::Content;
-use serde_yaml;
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+use serde_yaml;
+
+use crate::config::Config;
+use crate::util;
+use content::Content;
 
 pub const BUILD_DIR: &str = "build";
 pub const SRC_DIR: &str = "src";
@@ -103,7 +105,6 @@ impl Vault {
 mod test {
     use super::*;
     use std::error::Error;
-    use std::fs;
     use tempfile::tempdir;
 
     #[test]
