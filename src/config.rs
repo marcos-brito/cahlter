@@ -3,7 +3,7 @@ use serde_yaml;
 use std::path::Path;
 
 /// All the configuration options for the vault wrapped in a single struct
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Config {
     pub general: General,
     pub appearance: Appearance,
@@ -73,7 +73,7 @@ impl Default for Config {
 }
 
 /// General configuration options for the vault
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct General {
     /// Title for the vault
     pub title: String,
@@ -90,7 +90,7 @@ pub struct General {
 }
 
 /// Appearance options for the generated site
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Appearance {
     /// Paths to custom CSS files
     pub custom: Vec<String>,
@@ -101,7 +101,7 @@ pub struct Appearance {
 }
 
 /// Holds information about a theme
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Theme {
     /// The theme's name
     pub name: String,
@@ -110,7 +110,7 @@ pub struct Theme {
 }
 
 /// Holds a link that should be displayed in the header
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Link {
     /// The link's name. If there is no icon available, this will be displayed as label
     pub name: String,
@@ -121,7 +121,7 @@ pub struct Link {
 }
 
 /// Holds a Language e.g translation. It will be available in the header if multiple_language is true
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Language {
     /// The language's name (e.g. English, pt-br, etc.)
     pub name: String,
