@@ -1,5 +1,6 @@
 pub mod config;
+pub mod renderer;
 pub mod util;
 pub mod vault;
 
-pub use vault::content::{Chapter, Item, Section};
+pub use vault::content::{Chapter, Content, Item, Section};
