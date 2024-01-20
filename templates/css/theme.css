@@ -1,0 +1,15 @@
+.gruvbox-material {
+    --background: #282828;
+    --background-1: #1e1e1e;
+    --foreground: #ddc7a1;
+    --highlight: #689d6a;
+    --highlight-1: #7daea3;
+}
+
+.catppuccin {
+    --background: #1e1e2e;
+    --background-1: #11111b;
+    --foreground: #cdd6f4;
+    --highlight: #b4befe;
+    --highlight-1: #cba6f7;
+}
