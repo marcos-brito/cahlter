@@ -1,3 +1,7 @@
+mod askama_renderer;
+
+pub use askama_renderer::AskamaRenderer;
+
 use crate::config::Config;
 use crate::Content;
 
