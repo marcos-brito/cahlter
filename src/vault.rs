@@ -1,5 +1,4 @@
 pub mod content;
-pub mod summary;
 
 use std::fs;
 use std::path::{Path, PathBuf};

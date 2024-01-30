@@ -1,5 +1,6 @@
 pub mod config;
 pub mod renderer;
+pub mod summary;
 pub mod util;
 pub mod vault;
 

@@ -1,7 +1,7 @@
 mod chapter;
 mod section;
 
-use super::summary::{FileTreeSummarizer, Summary};
+use crate::summary::{FileTreeSummarizer, Summary};
 pub use chapter::Chapter;
 pub use section::Section;
 use std::convert::From;
