@@ -36,16 +36,26 @@ impl Renderer for AskamaRenderer<'_> {
 #[cfg(test)]
 mod test {
     use super::*;
+
     use crate::config::Config;
+    use crate::util;
     use crate::Content;
+
     use std::error::Error;
     use std::fs;
     use tempfile::tempdir;
 
+    fn generate_renderer() -> AskamaRenderer {
+        let temp_dir = tempdir().unwrap();
+        let content = Content::new(temp_dir.path().to_path_buf());
+        let config = Config::default();
+        let context = Context::new(content, config);
+
+        AskamaRenderer::new(context)
+    }
+
     #[test]
     fn it_should_render_the_header() -> Result<(), Box<dyn Error>> {
-        let temp_dir = tempdir()?;
-        let content = Content::new(temp_dir.path().to_path_buf());
         let links = vec![
             Link {
                 name: "GitHub".to_string(),
@@ -59,48 +69,11 @@ mod test {
             },
         ];
 
-        let mut config = Config::default();
-        config.general.title = "Test".to_string();
-        config.links = Some(links);
+        let mut renderer = generate_renderer();
+        renderer.context.config.links = Some(links);
 
-        let context = Context::new(content, config);
-        let renderer = AskamaRenderer::new(&context);
-
-        let output = renderer
-            .render_header()?
-            .chars()
-            .filter_map(|c| if c.is_whitespace() { None } else { Some(c) })
-            .collect::<String>();
-        let expected = fs::read_to_string("tests/testdata/header.html")?
-            .chars()
-            .filter_map(|c| if c.is_whitespace() { None } else { Some(c) })
-            .collect::<String>();
-
-        assert_eq!(output, expected);
-
-        Ok(())
-    }
-
-    #[test]
-    fn it_should_render_the_header_if_links_are_empty() -> Result<(), Box<dyn Error>> {
-        let temp_dir = tempdir()?;
-        let content = Content::new(temp_dir.path().to_path_buf());
-
-        let mut config = Config::default();
-        config.general.title = "Test".to_string();
-
-        let context = Context::new(content, config);
-        let renderer = AskamaRenderer::new(&context);
-
-        let output = renderer
-            .render_header()?
-            .chars()
-            .filter_map(|c| if c.is_whitespace() { None } else { Some(c) })
-            .collect::<String>();
-        let expected = fs::read_to_string("tests/testdata/header_empty_links.html")?
-            .chars()
-            .filter_map(|c| if c.is_whitespace() { None } else { Some(c) })
-            .collect::<String>();
+        let output = util::remove_whitespace(renderer.render_header()?);
+        let expected = util::remove_whitespace(fs::read_to_string("tests/testdata/header.html")?);
 
         assert_eq!(output, expected);
 
@@ -109,8 +82,6 @@ mod test {
 
     #[test]
     fn it_should_render_the_header_if_it_have_icons() -> Result<(), Box<dyn Error>> {
-        let temp_dir = tempdir()?;
-        let content = Content::new(temp_dir.path().to_path_buf());
         let links = vec![
             Link {
                 name: "GitHub".to_string(),

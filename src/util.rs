@@ -14,3 +14,10 @@ where
 
     Ok(())
 }
+
+pub fn remove_whitespace<S>(s: S) -> String
+where
+    S: AsRef<str>,
+{
+    s.as_ref().chars().filter(|c| !c.is_whitespace()).collect()
+}
