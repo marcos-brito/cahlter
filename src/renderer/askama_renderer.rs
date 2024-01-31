@@ -10,12 +10,12 @@ struct Header<'a> {
     links: &'a Vec<Link>,
 }
 
-pub struct AskamaRenderer<'a> {
-    pub context: &'a Context,
+pub struct AskamaRenderer {
+    pub context: Context,
 }
 
-impl<'a> AskamaRenderer<'a> {
-    pub fn new(context: &'a Context) -> Self {
+impl AskamaRenderer {
+    pub fn new(context: Context) -> Self {
         Self { context }
     }
 
@@ -27,7 +27,7 @@ impl<'a> AskamaRenderer<'a> {
     }
 }
 
-impl Renderer for AskamaRenderer<'_> {
+impl Renderer for AskamaRenderer {
     fn render(&self) -> Result<String> {
         unimplemented!()
     }
