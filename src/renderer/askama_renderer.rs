@@ -95,6 +95,18 @@ mod test {
             },
         ];
 
+        let mut renderer = generate_renderer();
+        renderer.context.config.links = Some(links);
+
+        let output = util::remove_whitespace(renderer.render_header()?);
+        let expected =
+            util::remove_whitespace(fs::read_to_string("tests/testdata/header_with_icons.html")?);
+
+        assert_eq!(output, expected);
+
+        Ok(())
+    }
+
         let mut config = Config::default();
         config.general.title = "Test".to_string();
         config.links = Some(links);
