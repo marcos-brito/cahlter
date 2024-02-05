@@ -9,7 +9,9 @@
                 {%- match link.icon -%}
                     {%- when Some with (icon) -%}
                         <li class="nav--item">
-                            <i class="ti ti-{{icon}}"></i>
+                            <a href="{{link.url}}">
+                                <i class="ti ti-{{icon}}"></i>
+                            </a>
                         </li>
                     {%- when None -%}
                         <li class="nav--item">
