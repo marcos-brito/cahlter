@@ -34,22 +34,36 @@ impl Content {
     where
         P: AsRef<Path>,
     {
-        let summary = Content::get_summary(path);
+        let summary = Content::create_summary(path);
 
         Content { summary }
     }
 
     // Just iterate over the summary and filter
-    pub fn get_chapters() -> Vec<Chapter> {
-        unimplemented!()
+    pub fn chapters(&self) -> Vec<Chapter> {
+        self.summary
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                Item::Chapter(chapter) => Some(chapter.clone()),
+                _ => None,
+            })
+            .collect()
     }
 
     // Just iterate over the summary and filter
-    pub fn get_sections() -> Vec<Section> {
-        unimplemented!()
+    pub fn sections(&self) -> Vec<Section> {
+        self.summary
+            .items
+            .iter()
+            .filter_map(|item| match item {
+                Item::Section(section) => Some(section.clone()),
+                _ => None,
+            })
+            .collect()
     }
 
-    fn get_summary<P>(path: P) -> Summary
+    fn create_summary<P>(path: P) -> Summary
     where
         P: AsRef<Path>,
     {
