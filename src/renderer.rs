@@ -8,7 +8,7 @@ use crate::Content;
 use anyhow::Result;
 
 pub trait Renderer {
-    fn render(&self) -> Result<String>;
+    fn render(&self) -> Result<Vec<String>>;
 }
 
 pub struct Context {
