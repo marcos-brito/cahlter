@@ -1,5 +1,9 @@
+use anyhow::Result;
+use askama::Template;
+
 use super::{Context, Renderer};
 use crate::config::Link;
+use crate::{Chapter, Item, Section};
 
 use anyhow::Result;
 use askama::Template;
@@ -10,8 +14,29 @@ struct Header<'a> {
     links: &'a Vec<Link>,
 }
 
+#[derive(Template)]
+#[template(path = "sidebar.html", escape = "none")]
+struct Sidebar<'a> {
+    title: &'a String,
+    table_of_contents: &'a String,
+}
+
+#[derive(Template)]
+#[template(path = "sidebar/chapter.html", escape = "none")]
+struct SidebarChapter<'a> {
+    title: &'a String,
+    subchapters: &'a String,
+    target: &'a String,
+}
+
+#[derive(Template)]
+#[template(path = "sidebar/section.html")]
+struct SidebarSection<'a> {
+    title: &'a String,
+}
+
 pub struct AskamaRenderer {
-    pub context: Context,
+    context: Context,
 }
 
 impl AskamaRenderer {
@@ -107,24 +132,79 @@ mod test {
         Ok(())
     }
 
+    #[test]
+    fn it_should_render_the_sidebar() -> Result<(), Box<dyn Error>> {
+        let temp_dir = tempdir()?;
+        fs::create_dir(temp_dir.path().join("chapter1"))?;
+        fs::write(temp_dir.path().join("chapter1/subchapter1.1.md"), "")?;
+        fs::write(temp_dir.path().join("chapter1/index.md"), "")?;
+        fs::write(temp_dir.path().join("chapter1/subchapter1.2.md"), "")?;
+        fs::write(temp_dir.path().join("chapter2.md"), "")?;
+
+        let mut renderer = generate_renderer();
+        let content = Content::new(temp_dir.path().to_path_buf());
         let mut config = Config::default();
         config.general.title = "Test".to_string();
-        config.links = Some(links);
+        renderer.context = Context::new(content, config);
 
-        let context = Context::new(content, config);
-        let renderer = AskamaRenderer::new(&context);
-
-        let output = renderer
-            .render_header()?
-            .chars()
-            .filter_map(|c| if c.is_whitespace() { None } else { Some(c) })
-            .collect::<String>();
-        let expected = fs::read_to_string("tests/testdata/header_with_icons.html")?
-            .chars()
-            .filter_map(|c| if c.is_whitespace() { None } else { Some(c) })
-            .collect::<String>();
+        let output = util::remove_whitespace(renderer.render_sidebar()?);
+        let expected = util::remove_whitespace(fs::read_to_string("tests/testdata/sidebar.html")?);
 
         assert_eq!(output, expected);
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_should_render_a_chapter_in_the_sidebar() -> Result<(), Box<dyn Error>> {
+        let test_cases = vec![
+            (
+                Chapter::new("Chapter 1", "1", "chapter1.md", vec![]),
+                "tests/testdata/sidebar/chapter.html",
+            ),
+            (
+                Chapter::new(
+                    "Chapter 1",
+                    "1",
+                    "chapter1.md",
+                    vec![Item::Chapter(Chapter::new(
+                        "Subchapter 1",
+                        "1.1",
+                        "subchapter1.md",
+                        vec![],
+                    ))],
+                ),
+                "tests/testdata/sidebar/chapter_nested.html",
+            ),
+        ];
+
+        let renderer = generate_renderer();
+
+        for (chapter, expected_path) in test_cases {
+            let output = util::remove_whitespace(renderer.render_sidebar_chapter(&chapter)?);
+            let expected = util::remove_whitespace(fs::read_to_string(expected_path)?);
+
+            assert_eq!(output, expected);
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_should_render_a_section_in_the_sidebar() -> Result<(), Box<dyn Error>> {
+        let test_cases = vec![(
+            Section::new("Section 1"),
+            "tests/testdata/sidebar/section.html",
+        )];
+
+        let renderer = generate_renderer();
+
+        for (input, expected_path) in test_cases.iter() {
+            let output = util::remove_whitespace(renderer.render_sidebar_section(input)?);
+            let expected = util::remove_whitespace(fs::read_to_string(expected_path)?);
+
+            assert_eq!(output, expected);
+        }
 
         Ok(())
     }

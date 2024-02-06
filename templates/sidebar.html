@@ -1,11 +1,4 @@
 <aside class="sidebar">
-    {% for item in items %}
-        {%- match item %} 
-            {%- when Item::Chapter with {title, number, _, subchapters} -%}
-                <p>{{number}} {{title}}</p>
-                {% for subchapter in subchapters %}
-                    <p>{{subchapter.number}} {{subchapter.title}}</p>
-                {% endfor %}
-        {%- endmatch %}
-    {% endfor %}
+    <h1 class="title">{{title}}</h1>
+    <div class="table-of-contents">{{table_of_contents}}</div>
 </aside>
