@@ -94,16 +94,12 @@ body {
 .table-of-contents__container {
     display: flex;
     flex-direction: column;
+    margin-left: 12px;
     gap: 8px;
 }
 
 .table-of-contents__chapter:hover {
     color: var(--highlight);
-}
-
-.table-of-contents__chapter--sub {
-    margin-left: 12px;
-    font-size: 14px;
 }
 
 .table-of-contents__section {
