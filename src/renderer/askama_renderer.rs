@@ -37,6 +37,7 @@ struct SidebarSection<'a> {
 #[derive(Template)]
 #[template(path = "index.html", escape = "none")]
 struct Page<'a> {
+    theme: &'a String,
     header: &'a String,
     sidebar: &'a String,
     content: &'a String,
@@ -127,6 +128,7 @@ impl Renderer for AskamaRenderer {
     fn render(&self, chapter: &Chapter) -> Result<String> {
         let header = self.render_header()?;
         let sidebar = self.render_sidebar()?;
+        let theme = &self.context.config.appearance.default_theme;
 
         let markdown = fs::read_to_string(&chapter.content).unwrap();
         let parser = pulldown_cmark::Parser::new(&markdown);
@@ -135,6 +137,7 @@ impl Renderer for AskamaRenderer {
         pulldown_cmark::html::push_html(&mut html, parser);
 
         let index = Page {
+            theme: &theme,
             header: &header,
             sidebar: &sidebar,
             content: &html,

@@ -57,7 +57,7 @@ impl Default for Config {
 
         let appearance = Appearance {
             custom: vec![],
-            default_theme: String::new(),
+            default_theme: String::from("gruvbox-material"),
             themes: vec![],
         };
 
