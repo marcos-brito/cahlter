@@ -141,6 +141,7 @@ mod test {
         vault.create()?;
 
         assert!(temp_dir.path().join("test_vault").join("build").exists());
+        assert!(temp_dir.path().join("test_vault").join("styles").exists());
         assert!(temp_dir.path().join("test_vault").join("src").exists());
         assert!(temp_dir
             .path()
