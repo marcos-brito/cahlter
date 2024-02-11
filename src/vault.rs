@@ -25,8 +25,6 @@ impl Vault {
     where
         P: AsRef<Path>,
     {
-        // FIX: it should first try to read from the disk and only if it fails use the default.
-        // Maybe a from_disk method?
         let config = Config::default();
         let content = Vault::get_content(&path);
 
@@ -36,6 +34,22 @@ impl Vault {
             path: path.as_ref().to_path_buf(),
         }
     }
+
+    pub fn from_disk<P>(path: P) -> Vault
+    where
+        P: AsRef<Path>,
+    {
+        let config = Config::from_disk(path);
+        let content = Vault::get_content(&path);
+
+        Vault {
+            content,
+            config,
+            path: path.as_ref().to_path_buf(),
+        }
+    }
+
+
     /// Initialize a new vault at the given path. It also updates the config
     /// so that the title is the name of the directory.
     pub fn init(&mut self) -> Result<()> {
