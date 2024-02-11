@@ -10,6 +10,7 @@ pub trait Summarizer {
     fn summarize(&self) -> Result<Vec<Item>>;
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Summary {
     pub items: Vec<Item>,
 }

@@ -12,6 +12,7 @@ pub trait Renderer {
     fn render(&self, chapter: &Chapter) -> Result<String>;
 }
 
+#[derive(Debug, Clone)]
 pub struct Context {
     pub content: Content,
     pub config: Config,

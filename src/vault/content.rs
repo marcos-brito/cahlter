@@ -25,6 +25,7 @@ impl From<Section> for Item {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Content {
     pub summary: Summary,
 }

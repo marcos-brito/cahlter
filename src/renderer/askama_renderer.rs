@@ -42,6 +42,7 @@ struct Page<'a> {
     content: &'a String,
 }
 
+#[derive(Debug, Clone)]
 pub struct AskamaRenderer {
     context: Context,
 }
