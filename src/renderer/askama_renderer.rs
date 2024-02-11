@@ -54,7 +54,7 @@ impl AskamaRenderer {
     }
 
     pub fn render_header(&self) -> Result<String> {
-        let links = self.context.config.links.clone().unwrap_or(Vec::new());
+        let links = self.context.config.links.clone();
         let header = Header { links: &links };
 
         Ok(header.render()?)
@@ -212,7 +212,7 @@ mod test {
         ];
 
         let mut renderer = generate_renderer();
-        renderer.context.config.links = Some(links);
+        renderer.context.config.links = links;
 
         let output = util::remove_whitespace(renderer.render_header()?);
         let expected = util::remove_whitespace(fs::read_to_string("tests/testdata/header.html")?);
@@ -238,7 +238,7 @@ mod test {
         ];
 
         let mut renderer = generate_renderer();
-        renderer.context.config.links = Some(links);
+        renderer.context.config.links = links;
 
         let output = util::remove_whitespace(renderer.render_header()?);
         let expected =

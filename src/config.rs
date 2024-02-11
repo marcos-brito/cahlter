@@ -7,8 +7,8 @@ use std::path::Path;
 pub struct Config {
     pub general: General,
     pub appearance: Appearance,
-    pub links: Option<Vec<Link>>,
-    pub languages: Option<Vec<Language>>,
+    pub links: Vec<Link>,
+    pub languages: Vec<Language>,
 }
 
 impl Config {
@@ -64,8 +64,8 @@ impl Default for Config {
         let config = Config {
             general,
             appearance,
-            links: None,
-            languages: None,
+            links: vec![],
+            languages: vec![],
         };
 
         config
