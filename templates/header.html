@@ -1,0 +1,26 @@
+<header class="header">
+    <div class="search">
+        <i class="ti ti-search"></i>
+        <input type="text" placeholder="Search">
+    </div>
+    <nav>
+        <ul class="nav">
+            {%- for link in links -%}
+                {%- match link.icon -%}
+                    {%- when Some with (icon) -%}
+                        <li class="nav--item">
+                            <a href="{{link.url}}">
+                                <i class="ti ti-{{icon}}"></i>
+                            </a>
+                        </li>
+                    {%- when None -%}
+                        <li class="nav--item">
+                            <a href="{{ link.url }}">{{ link.name }}</a>
+                        </li>
+                {%- endmatch -%}
+            {%- endfor %}
+            <li class="nav--item">
+                <i class="ti ti-settings-filled"></i>
+            </li>
+        </ul>
+</header>

@@ -11,15 +11,13 @@ pub trait Summarizer {
 }
 
 pub struct Summary {
-    pub summarizer: Box<dyn Summarizer>,
+    pub items: Vec<Item>,
 }
 
 impl Summary {
     pub fn new(summarizer: Box<dyn Summarizer>) -> Summary {
-        Summary { summarizer }
-    }
-
-    pub fn summarize(&mut self) -> Result<Vec<Item>> {
-        Ok(self.summarizer.summarize()?)
+        Summary {
+            items: summarizer.summarize().unwrap(),
+        }
     }
 }
