@@ -3,12 +3,13 @@ mod askama_renderer;
 pub use askama_renderer::AskamaRenderer;
 
 use crate::config::Config;
+use crate::Chapter;
 use crate::Content;
 
 use anyhow::Result;
 
 pub trait Renderer {
-    fn render(&self) -> Result<Vec<String>>;
+    fn render(&self, chapter: &Chapter) -> Result<String>;
 }
 
 pub struct Context {

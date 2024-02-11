@@ -5,8 +5,7 @@ use super::{Context, Renderer};
 use crate::config::Link;
 use crate::{Chapter, Item, Section};
 
-use anyhow::Result;
-use askama::Template;
+use std::fs;
 
 #[derive(Template)]
 #[template(path = "header.html")]
@@ -33,6 +32,14 @@ struct SidebarChapter<'a> {
 #[template(path = "sidebar/section.html")]
 struct SidebarSection<'a> {
     title: &'a String,
+}
+
+#[derive(Template)]
+#[template(path = "index.html", escape = "none")]
+struct Page<'a> {
+    header: &'a String,
+    sidebar: &'a String,
+    content: &'a String,
 }
 
 pub struct AskamaRenderer {
@@ -116,8 +123,23 @@ impl AskamaRenderer {
 }
 
 impl Renderer for AskamaRenderer {
-    fn render(&self) -> Result<String> {
-        unimplemented!()
+    fn render(&self, chapter: &Chapter) -> Result<String> {
+        let header = self.render_header()?;
+        let sidebar = self.render_sidebar()?;
+
+        let markdown = fs::read_to_string(&chapter.content).unwrap();
+        let parser = pulldown_cmark::Parser::new(&markdown);
+        let mut html = String::new();
+
+        pulldown_cmark::html::push_html(&mut html, parser);
+
+        let index = Page {
+            header: &header,
+            sidebar: &sidebar,
+            content: &html,
+        };
+
+        return Ok(index.render()?);
     }
 }
 
@@ -131,6 +153,7 @@ mod test {
 
     use std::error::Error;
     use std::fs;
+    use std::path::Path;
     use tempfile::tempdir;
 
     fn generate_renderer() -> AskamaRenderer {
@@ -140,6 +163,33 @@ mod test {
         let context = Context::new(content, config);
 
         AskamaRenderer::new(context)
+    }
+
+    #[test]
+    fn it_should_render_the_full_page() -> Result<(), Box<dyn Error>> {
+        let temp_dir = tempdir()?;
+        fs::create_dir(temp_dir.path().join("chapter1"))?;
+        fs::write(
+            temp_dir.path().join("chapter1/index.md"),
+            "# This is a test",
+        )?;
+        fs::write(temp_dir.path().join("chapter1/subchapter1.md"), "")?;
+
+        let mut renderer = generate_renderer();
+        renderer.context.content = Content::new(&temp_dir);
+        renderer.context.config.general.title = String::from("Test");
+
+        for chapter in renderer.context.content.chapters().iter() {
+            let expected_path =
+                Path::new("tests/testdata").join(chapter.content.file_stem().unwrap());
+
+            let output = util::remove_whitespace(renderer.render(&chapter)?);
+            let expected = util::remove_whitespace(fs::read_to_string(&expected_path)?);
+
+            assert_eq!(output, expected);
+        }
+
+        Ok(())
     }
 
     #[test]
