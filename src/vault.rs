@@ -64,6 +64,10 @@ impl Vault {
         util::create_dir_if_not_exists(self.path.join(BUILD_DIR)).with_context(|| {
             format!("Could not create {}.", self.path.join(BUILD_DIR).display())
         })?;
+
+        util::create_dir_if_not_exists(self.path.join("styles"))
+            .with_context(|| format!("Could not create {}.", self.path.join("styles").display()))?;
+
         util::create_dir_if_not_exists(self.path.join(SRC_DIR))
             .with_context(|| format!("Could not create {}.", self.path.join(SRC_DIR).display()))?;
 
