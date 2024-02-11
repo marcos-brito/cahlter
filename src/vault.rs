@@ -7,7 +7,8 @@ use anyhow::{Context, Result};
 use serde_yaml;
 
 use crate::config::Config;
-use crate::util;
+use crate::renderer::{self, AskamaRenderer, Renderer};
+use crate::{util, Chapter};
 use content::Content;
 
 pub const BUILD_DIR: &str = "build";
@@ -39,7 +40,7 @@ impl Vault {
     where
         P: AsRef<Path>,
     {
-        let config = Config::from_disk(path);
+        let config = Config::from_disk(&path);
         let content = Vault::get_content(&path);
 
         Vault {
@@ -48,7 +49,6 @@ impl Vault {
             path: path.as_ref().to_path_buf(),
         }
     }
-
 
     /// Initialize a new vault at the given path. It also updates the config
     /// so that the title is the name of the directory.
@@ -95,6 +95,70 @@ impl Vault {
                 self.path.join(CONFIG_FILE).display()
             )
         })?;
+
+        Ok(())
+    }
+
+    pub fn build(&mut self) -> Result<()> {
+        // make sure we got the most recent content
+        self.content = Some(Content::new(&self.path.join(SRC_DIR)));
+
+        let context = renderer::Context::new(self.content.clone().unwrap(), self.config.clone());
+        let renderer = AskamaRenderer::new(context);
+        let chapters = self.content.clone().unwrap().chapters();
+
+        // why the fuck it can't take a PathBuf? The docs says it implements AsRef<Path> 😿
+        util::copy_dir("templates/css", self.path.join("styles").to_str().unwrap())
+            .with_context(|| "Could not move style files")?;
+
+        for chapter in chapters.iter() {
+            self.write_chapter(&chapter, renderer.clone(), self.path.join(BUILD_DIR))?;
+        }
+
+        Ok(())
+    }
+
+    fn write_chapter<R, P>(&self, chapter: &Chapter, renderer: R, destination: P) -> Result<()>
+    where
+        R: Renderer + Clone,
+        P: AsRef<Path>,
+    {
+        let file_name = chapter
+            .content
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+            + ".html";
+
+        match chapter.subchapters.is_empty() {
+            true => {
+                let renderered = renderer.render(chapter).with_context(|| {
+                    format!("Could not render chapter at {:?}", chapter.content)
+                })?;
+
+                let _ = fs::write(destination.as_ref().join(file_name), renderered);
+            }
+            false => {
+                let destination = self
+                    .path
+                    .join(BUILD_DIR)
+                    .join(chapter.content.parent().unwrap().file_stem().unwrap());
+
+                fs::create_dir(&destination)?;
+
+                let renderered = renderer.render(chapter).with_context(|| {
+                    format!("Could not render chapter at {:?}", chapter.content)
+                })?;
+
+                let _ = fs::write(destination.join(file_name), renderered);
+
+                for subchapter in chapter.subchapters.iter() {
+                    self.write_chapter(&subchapter, renderer.clone(), &destination)?;
+                }
+            }
+        }
 
         Ok(())
     }
@@ -183,6 +247,29 @@ mod test {
         vault.init()?;
 
         assert!(Vault::was_initialized(temp_dir.path().join("test_vault")));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_should_build_the_vault() -> Result<(), Box<dyn Error>> {
+        let temp_dir = tempdir()?;
+        let mut vault = Vault::new(temp_dir.path());
+        vault.init()?;
+
+        let _ = fs::write(
+            temp_dir.path().join(SRC_DIR).join("chapter1.md"),
+            "# Hello there",
+        );
+        let _ = fs::write(
+            temp_dir.path().join(SRC_DIR).join("chapter2.md"),
+            "> Here is where the fun begins",
+        );
+        vault.build()?;
+
+        assert!(temp_dir.path().join(SRC_DIR).join("chapter1.md").exists());
+        assert!(temp_dir.path().join(SRC_DIR).join("chapter2.md").exists());
+        assert!(temp_dir.path().join("styles").join("main.css").exists());
 
         Ok(())
     }
