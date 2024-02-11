@@ -1,4 +1,3 @@
-use super::Item;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, PartialEq, Debug)]
@@ -6,11 +5,11 @@ pub struct Chapter {
     pub title: String,
     pub number: String,
     pub content: PathBuf,
-    pub subchapters: Vec<Item>,
+    pub subchapters: Vec<Chapter>,
 }
 
 impl Chapter {
-    pub fn new<P, S>(title: S, number: S, content: P, subchapters: Vec<Item>) -> Self
+    pub fn new<P, S>(title: S, number: S, content: P, subchapters: Vec<Chapter>) -> Self
     where
         P: AsRef<Path>,
         S: Into<String>,

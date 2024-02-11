@@ -45,7 +45,7 @@ impl FileTreeSummarizer {
 
     /// It finds all the chapters in [`self.path`] recursively. It takes an initial chapter number
     /// where the enumeration will start.
-    fn find_chapters<S>(&self, initial_chapter_number: S) -> Result<Vec<Item>>
+    fn find_chapters<S>(&self, initial_chapter_number: S) -> Result<Vec<Chapter>>
     where
         S: Into<String>,
     {
@@ -69,7 +69,7 @@ impl FileTreeSummarizer {
                     Vec::new(),
                 );
 
-                summary.push(Item::from(chapter));
+                summary.push(chapter);
                 chapter_number = FileTreeSummarizer::next_chapter_number(chapter_number);
                 continue;
             }
@@ -87,7 +87,7 @@ impl FileTreeSummarizer {
                     subchapters,
                 );
 
-                summary.push(Item::from(chapter));
+                summary.push(chapter);
             }
         }
 
@@ -206,7 +206,11 @@ impl FileTreeSummarizer {
 
 impl Summarizer for FileTreeSummarizer {
     fn summarize(&self) -> Result<Vec<Item>> {
-        self.find_chapters("1")
+        Ok(self
+            .find_chapters("1")?
+            .iter()
+            .map(|chapter| return Item::from(chapter.clone()))
+            .collect())
     }
 }
 
@@ -223,24 +227,24 @@ mod test {
         let main_chapter_path = temp_dir.path().join("chapter1");
 
         let subchapters = vec![
-            Item::from(Chapter::new(
+            Chapter::new(
                 "Chapter1.1",
                 "1.1",
                 main_chapter_path.join("chapter1.1.md"),
                 Vec::new(),
-            )),
-            Item::from(Chapter::new(
+            ),
+            Chapter::new(
                 "Chapter1.2",
                 "1.2",
                 main_chapter_path.join("chapter1.2.md"),
                 Vec::new(),
-            )),
-            Item::from(Chapter::new(
+            ),
+            Chapter::new(
                 "Chapter1.3",
                 "1.3",
                 main_chapter_path.join("chapter1.3.md"),
                 Vec::new(),
-            )),
+            ),
         ];
 
         let expected = Item::from(Chapter::new(
@@ -251,13 +255,9 @@ mod test {
         ));
 
         fs::create_dir(&main_chapter_path)?;
+
         for subchapter in subchapters.iter() {
-            match subchapter {
-                Item::Chapter(chapter) => {
-                    fs::write(temp_dir.path().join(&chapter.content), "")?;
-                }
-                _ => {}
-            }
+            fs::write(temp_dir.path().join(&subchapter.content), "")?;
         }
         fs::write(&main_chapter_path.join("chapter1.md"), "")?;
 

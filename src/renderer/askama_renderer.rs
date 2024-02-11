@@ -81,10 +81,7 @@ impl AskamaRenderer {
         let subchapters = chapter
             .subchapters
             .iter()
-            .map(|item| match item {
-                Item::Chapter(chapter) => self.render_sidebar_chapter(&chapter),
-                _ => Ok(String::new()), // FIX: subchapters should not be an array of Item
-            })
+            .map(|chapter| self.render_sidebar_chapter(&chapter))
             .collect::<Result<Vec<String>>>()?
             .join("");
 
@@ -233,12 +230,12 @@ mod test {
                     "Chapter 1",
                     "1",
                     "chapter1.md",
-                    vec![Item::Chapter(Chapter::new(
+                    vec![Chapter::new(
                         "Subchapter 1",
                         "1.1",
                         "subchapter1.md",
                         vec![],
-                    ))],
+                    )],
                 ),
                 "tests/testdata/sidebar/chapter_nested.html",
             ),
