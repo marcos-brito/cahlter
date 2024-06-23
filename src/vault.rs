@@ -69,33 +69,23 @@ impl Vault {
     }
 
     fn create(&self) -> Result<()> {
-        fs::create_dir_all(&self.path).with_context(|| {
-            format!(
-                "Could not create {}. Maybe it's invalid or you don't have permission",
-                &self.path.display()
-            )
-        })?;
+        let dirs = vec![
+            self.path.clone(),
+            self.path.join(BUILD_DIR),
+            self.path.join(SRC_DIR),
+            self.path.join(STYLES_DIR),
+        ];
 
-        util::create_dir_if_not_exists(self.path.join(BUILD_DIR)).with_context(|| {
-            format!("Could not create {}.", self.path.join(BUILD_DIR).display())
-        })?;
-
-        util::create_dir_if_not_exists(self.path.join("styles"))
-            .with_context(|| format!("Could not create {}.", self.path.join("styles").display()))?;
-
-        util::create_dir_if_not_exists(self.path.join(SRC_DIR))
-            .with_context(|| format!("Could not create {}.", self.path.join(SRC_DIR).display()))?;
+        for dir in dirs {
+            fs::create_dir_all(&self.path)
+                .with_context(|| format!("Could not create {}", dir.display()))?;
+        }
 
         fs::write(
             self.path.join(CONFIG_FILE),
             serde_yaml::to_string(&Config::default())?,
         )
-        .with_context(|| {
-            format!(
-                "Could not create {}.",
-                self.path.join(CONFIG_FILE).display()
-            )
-        })?;
+        .with_context(|| format!("Could not write {}.", self.path.join(CONFIG_FILE).display()))?;
 
         Ok(())
     }
