@@ -13,6 +13,7 @@ use content::Content;
 
 pub const BUILD_DIR: &str = "build";
 pub const SRC_DIR: &str = "src";
+pub const STYLES_DIR: &str = "styles";
 pub const CONFIG_FILE: &str = "cahlter.yml";
 
 pub struct Vault {
