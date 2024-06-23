@@ -51,7 +51,7 @@ impl Vault {
     }
 
     /// Initialize a new vault at the given path. It also updates the config
-    /// so that the title is the name of the directory.
+    /// so the title is the name of the directory.
     pub fn init(&mut self) -> Result<()> {
         let mut new_config = Config::default();
 
