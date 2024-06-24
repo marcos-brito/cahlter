@@ -1,7 +1,8 @@
 mod chapter;
 mod section;
 
-use crate::summary::{FileTreeSummarizer, Summary};
+use crate::summary::{FileTreeSummarizer, Summarizer, Summary};
+use anyhow::{Context, Result};
 pub use chapter::Chapter;
 pub use section::Section;
 use std::convert::From;
@@ -31,13 +32,13 @@ pub struct Content {
 }
 
 impl Content {
-    pub fn new<P>(path: P) -> Content
+    pub fn new<P>(path: P) -> Result<Content>
     where
         P: AsRef<Path>,
     {
-        let summary = Content::create_summary(path);
+        let summary = Content::create_summary(path)?;
 
-        Content { summary }
+        Ok(Content { summary })
     }
 
     // Just iterate over the summary and filter
@@ -64,7 +65,7 @@ impl Content {
             .collect()
     }
 
-    fn create_summary<P>(path: P) -> Summary
+    fn create_summary<P>(path: P) -> Result<Summary>
     where
         P: AsRef<Path>,
     {
@@ -73,9 +74,12 @@ impl Content {
 
         if has_summary_file {
             unimplemented!();
-        } else {
-            let summarizer = Box::new(FileTreeSummarizer::new(path));
-            Summary::new(summarizer)
         }
+
+        let summarizer = FileTreeSummarizer::new(&path);
+
+        Ok(summarizer
+            .summarize()
+            .with_context(|| format!("Could not summarize the content in {}", &path.display()))?)
     }
 }

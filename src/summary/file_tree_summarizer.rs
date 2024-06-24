@@ -1,4 +1,4 @@
-use super::Summarizer;
+use super::{Summarizer, Summary};
 use crate::{Chapter, Item};
 use anyhow::{anyhow, Result};
 use std::fs;
@@ -205,12 +205,14 @@ impl FileTreeSummarizer {
 }
 
 impl Summarizer for FileTreeSummarizer {
-    fn summarize(&self) -> Result<Vec<Item>> {
-        Ok(self
+    fn summarize(&self) -> Result<Summary> {
+        let items = self
             .find_chapters("1")?
             .iter()
             .map(|chapter| return Item::from(chapter.clone()))
-            .collect())
+            .collect();
+
+        Ok(Summary::new(items))
     }
 }
 
@@ -263,7 +265,7 @@ mod test {
 
         let summary = FileTreeSummarizer::new(temp_dir.path()).summarize()?;
 
-        assert_eq!(vec![expected], summary);
+        assert_eq!(vec![expected], summary.items);
 
         Ok(())
     }
@@ -304,7 +306,7 @@ mod test {
 
         let summary = FileTreeSummarizer::new(temp_dir.path()).summarize()?;
 
-        assert_eq!(expected, summary);
+        assert_eq!(expected, summary.items);
 
         Ok(())
     }

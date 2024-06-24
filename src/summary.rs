@@ -7,7 +7,7 @@ use anyhow::Result;
 use crate::Item;
 
 pub trait Summarizer {
-    fn summarize(&self) -> Result<Vec<Item>>;
+    fn summarize(&self) -> Result<Summary>;
 }
 
 #[derive(Clone, PartialEq, Debug)]
@@ -16,9 +16,7 @@ pub struct Summary {
 }
 
 impl Summary {
-    pub fn new(summarizer: Box<dyn Summarizer>) -> Summary {
-        Summary {
-            items: summarizer.summarize().unwrap(),
-        }
+    pub fn new(items: Vec<Item>) -> Summary {
+        Summary { items }
     }
 }
