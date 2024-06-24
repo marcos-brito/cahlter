@@ -209,13 +209,13 @@ mod test {
 
         vault.create()?;
 
-        assert!(temp_dir.path().join("test_vault").join("build").exists());
-        assert!(temp_dir.path().join("test_vault").join("styles").exists());
-        assert!(temp_dir.path().join("test_vault").join("src").exists());
+        assert!(temp_dir.path().join("test_vault").join(BUILD_DIR).exists());
+        assert!(temp_dir.path().join("test_vault").join(STYLES_DIR).exists());
+        assert!(temp_dir.path().join("test_vault").join(SRC_DIR).exists());
         assert!(temp_dir
             .path()
             .join("test_vault")
-            .join("cahlter.yml")
+            .join(CONFIG_FILE)
             .exists());
 
         Ok(())
@@ -260,7 +260,7 @@ mod test {
 
         assert!(temp_dir.path().join(SRC_DIR).join("chapter1.md").exists());
         assert!(temp_dir.path().join(SRC_DIR).join("chapter2.md").exists());
-        assert!(temp_dir.path().join("styles").join("main.css").exists());
+        assert!(temp_dir.path().join(STYLES_DIR).join("main.css").exists());
 
         Ok(())
     }
