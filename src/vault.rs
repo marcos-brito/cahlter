@@ -70,7 +70,7 @@ impl Vault {
         ];
 
         for dir in dirs {
-            fs::create_dir_all(&self.path)
+            fs::create_dir_all(&dir)
                 .with_context(|| format!("Could not create {}", dir.display()))?;
         }
 
