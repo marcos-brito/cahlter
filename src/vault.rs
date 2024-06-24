@@ -1,15 +1,13 @@
 pub mod content;
 
-use std::fs;
-use std::path::{Path, PathBuf};
-
-use anyhow::{Context, Result};
-use serde_yaml;
-
 use crate::config::Config;
 use crate::renderer::{self, AskamaRenderer, Renderer};
-use crate::{util, Chapter};
+use crate::Chapter;
+use anyhow::{Context, Result};
 use content::Content;
+use serde_yaml;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 pub const BUILD_DIR: &str = "build";
 pub const SRC_DIR: &str = "src";

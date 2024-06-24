@@ -1,12 +1,10 @@
 mod askama_renderer;
 
-pub use askama_renderer::AskamaRenderer;
-
 use crate::config::Config;
 use crate::Chapter;
 use crate::Content;
-
 use anyhow::Result;
+pub use askama_renderer::AskamaRenderer;
 
 pub trait Renderer {
     fn render(&self, chapter: &Chapter) -> Result<String>;

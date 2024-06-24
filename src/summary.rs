@@ -1,10 +1,8 @@
 mod file_tree_summarizer;
 
-pub use file_tree_summarizer::FileTreeSummarizer;
-
-use anyhow::Result;
-
 use crate::Item;
+use anyhow::Result;
+pub use file_tree_summarizer::FileTreeSummarizer;
 
 pub trait Summarizer {
     fn summarize(&self) -> Result<Summary>;
