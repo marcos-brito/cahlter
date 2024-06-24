@@ -17,7 +17,6 @@ pub const STYLES_DIR: &str = "styles";
 pub const CONFIG_FILE: &str = "cahlter.yml";
 
 pub struct Vault {
-    pub content: Option<Content>,
     pub config: Config,
     pub path: PathBuf,
 }
@@ -28,10 +27,8 @@ impl Vault {
         P: AsRef<Path>,
     {
         let config = Config::default();
-        let content = Vault::get_content(&path);
 
         Vault {
-            content,
             config,
             path: path.as_ref().to_path_buf(),
         }
@@ -41,11 +38,9 @@ impl Vault {
     where
         P: AsRef<Path>,
     {
-        let config = Config::from_disk(&path);
-        let content = Vault::get_content(&path);
+        let config = Config::from_disk(path.as_ref().join(CONFIG_FILE));
 
         Vault {
-            content,
             config,
             path: path.as_ref().to_path_buf(),
         }
@@ -91,16 +86,10 @@ impl Vault {
     }
 
     pub fn build(&mut self) -> Result<()> {
-        // make sure we got the most recent content
-        self.content = Some(Content::new(&self.path.join(SRC_DIR)));
-
-        let context = renderer::Context::new(self.content.clone().unwrap(), self.config.clone());
+        let content = Content::new(self.path.join(SRC_DIR))?;
+        let context = renderer::Context::new(content.clone(), self.config.clone());
         let renderer = AskamaRenderer::new(context);
-        let chapters = self.content.clone().unwrap().chapters();
-
-        // why the fuck it can't take a PathBuf? The docs says it implements AsRef<Path> 😿
-        util::copy_dir("templates/css", self.path.join("styles").to_str().unwrap())
-            .with_context(|| "Could not move style files")?;
+        let chapters = content.chapters();
 
         for chapter in chapters.iter() {
             self.write_chapter(&chapter, renderer.clone(), self.path.join(BUILD_DIR))?;
@@ -152,17 +141,6 @@ impl Vault {
         }
 
         Ok(())
-    }
-
-    fn get_content<P>(path: P) -> Option<Content>
-    where
-        P: AsRef<Path>,
-    {
-        if Vault::was_initialized(&path) {
-            Some(Content::new(path.as_ref().to_path_buf().join(SRC_DIR)))
-        } else {
-            None
-        }
     }
 
     fn was_initialized<P>(path: P) -> bool
