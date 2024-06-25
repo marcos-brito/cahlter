@@ -46,15 +46,12 @@ impl Vault {
     /// Initialize a new vault at the given path. It also updates the config
     /// so the title is the name of the directory.
     pub fn init(&mut self) -> Result<()> {
-        let mut new_config = Config::default();
-
         if Vault::was_initialized(&self.path) {
             anyhow::bail!("calhter.yml already exists at {}", self.path.display());
         }
 
         self.create()?;
-        new_config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
-        self.config.update(new_config);
+        self.config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
         self.config.save(self.path.join(CONFIG_FILE));
 
         Ok(())
@@ -70,7 +67,7 @@ impl Vault {
 
         fs::write(
             self.path.join(CONFIG_FILE),
-            serde_yaml::to_string(&Config::default())?,
+            serde_yaml::to_string(&self.config)?,
         )
         .with_context(|| format!("Could not write {}.", self.path.join(CONFIG_FILE).display()))?;
 
