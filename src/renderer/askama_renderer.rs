@@ -1,6 +1,5 @@
 use super::{Context, Renderer};
 use crate::config::Link;
-use crate::vault::SRC_DIR;
 use crate::{Chapter, Item, Section};
 use anyhow::Result;
 use askama::Template;

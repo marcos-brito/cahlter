@@ -2,6 +2,7 @@ pub mod content;
 
 use crate::config::Config;
 use crate::renderer::{self, AskamaRenderer, Renderer};
+use crate::util;
 use crate::Chapter;
 use anyhow::{Context, Result};
 use content::Content;
@@ -9,8 +10,6 @@ use serde_yaml;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub const BUILD_DIR: &str = "build";
-pub const SRC_DIR: &str = "src";
 pub const STYLES_DIR: &str = "styles";
 pub const CONFIG_FILE: &str = "cahlter.yml";
 
@@ -62,12 +61,7 @@ impl Vault {
     }
 
     fn create(&self) -> Result<()> {
-        let dirs = vec![
-            self.path.clone(),
-            self.path.join(BUILD_DIR),
-            self.path.join(SRC_DIR),
-            self.path.join(STYLES_DIR),
-        ];
+        let dirs = vec![self.path.clone(), self.src_dir(), self.build_dir()];
 
         for dir in dirs {
             fs::create_dir_all(&dir)
@@ -84,14 +78,16 @@ impl Vault {
     }
 
     pub fn build(&mut self) -> Result<()> {
-        let content = Content::new(self.path.join(SRC_DIR))?;
+        let content = Content::new(self.src_dir())?;
         let context = renderer::Context::new(content.clone(), self.config.clone());
         let renderer = AskamaRenderer::new(context);
         let chapters = content.chapters();
 
         for chapter in chapters.iter() {
-            self.write_chapter(&chapter, renderer.clone(), self.path.join(BUILD_DIR))?;
+            self.write_chapter(&chapter, renderer.clone(), self.build_dir())?;
         }
+
+        util::copy_dir(self.path.join(STYLES_DIR), self.build_dir())?;
 
         Ok(())
     }
@@ -120,8 +116,7 @@ impl Vault {
             }
             false => {
                 let destination = self
-                    .path
-                    .join(BUILD_DIR)
+                    .build_dir()
                     .join(chapter.content.parent().unwrap().file_stem().unwrap());
 
                 fs::create_dir(&destination)?;
@@ -147,6 +142,14 @@ impl Vault {
     {
         path.as_ref().to_path_buf().join(CONFIG_FILE).exists()
     }
+
+    pub fn src_dir(&self) -> PathBuf {
+        self.path.join(&self.config.general.src_dir)
+    }
+
+    pub fn build_dir(&self) -> PathBuf {
+        self.path.join(&self.config.general.build_dir)
+    }
 }
 
 #[cfg(test)]
@@ -162,7 +165,7 @@ mod test {
 
         vault.init()?;
 
-        assert!(temp_dir.path().join("test_vault").exists());
+        assert!(vault.path.exists());
         assert!(vault.config.general.title == "test_vault");
 
         Ok(())
@@ -185,9 +188,8 @@ mod test {
 
         vault.create()?;
 
-        assert!(temp_dir.path().join("test_vault").join(BUILD_DIR).exists());
-        assert!(temp_dir.path().join("test_vault").join(STYLES_DIR).exists());
-        assert!(temp_dir.path().join("test_vault").join(SRC_DIR).exists());
+        assert!(vault.src_dir().exists());
+        assert!(vault.build_dir().exists());
         assert!(temp_dir
             .path()
             .join("test_vault")
@@ -224,18 +226,15 @@ mod test {
         let mut vault = Vault::new(temp_dir.path());
         vault.init()?;
 
+        let _ = fs::write(vault.src_dir().join("chapter1.md"), "# Hello there");
         let _ = fs::write(
-            temp_dir.path().join(SRC_DIR).join("chapter1.md"),
-            "# Hello there",
-        );
-        let _ = fs::write(
-            temp_dir.path().join(SRC_DIR).join("chapter2.md"),
+            vault.src_dir().join("chapter2.md"),
             "> Here is where the fun begins",
         );
         vault.build()?;
 
-        assert!(temp_dir.path().join(SRC_DIR).join("chapter1.md").exists());
-        assert!(temp_dir.path().join(SRC_DIR).join("chapter2.md").exists());
+        assert!(vault.src_dir().join("chapter1.md").exists());
+        assert!(vault.src_dir().join("chapter2.md").exists());
         assert!(temp_dir.path().join(STYLES_DIR).join("main.css").exists());
 
         Ok(())
