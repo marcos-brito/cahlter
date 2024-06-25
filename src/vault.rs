@@ -226,16 +226,15 @@ mod test {
         let mut vault = Vault::new(temp_dir.path());
         vault.init()?;
 
-        let _ = fs::write(vault.src_dir().join("chapter1.md"), "# Hello there");
-        let _ = fs::write(
+        fs::write(vault.src_dir().join("chapter1.md"), "# Hello there")?;
+        fs::write(
             vault.src_dir().join("chapter2.md"),
             "> Here is where the fun begins",
-        );
+        )?;
         vault.build()?;
 
-        assert!(vault.src_dir().join("chapter1.md").exists());
-        assert!(vault.src_dir().join("chapter2.md").exists());
-        assert!(temp_dir.path().join(STYLES_DIR).join("main.css").exists());
+        assert!(vault.build_dir().join("chapter1.html").exists());
+        assert!(vault.build_dir().join("chapter2.html").exists());
 
         Ok(())
     }
