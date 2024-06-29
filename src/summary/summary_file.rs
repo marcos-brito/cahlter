@@ -1,4 +1,5 @@
 use super::{Summarizer, Summary};
+use crate::util;
 use crate::{Chapter, Item, Section};
 use anyhow::Result;
 use pest::iterators::Pair;
@@ -40,7 +41,7 @@ impl SummaryFileSummarizer {
                 Rule::link => Some(Item::from(self.parse_link(line))),
                 Rule::list => {
                     let item = Item::from(self.parse_list(line, chapter_number.clone()));
-                    chapter_number = SummaryFileSummarizer::next_chapter_number(&chapter_number);
+                    chapter_number = util::next_chapter_number(&chapter_number);
 
                     Some(item)
                 }
@@ -64,7 +65,7 @@ impl SummaryFileSummarizer {
         let mut number = chapter_number.clone() + ".0";
         chapter.subchapters = rules
             .map(|rule| {
-                number = SummaryFileSummarizer::next_chapter_number(&number);
+                number = util::next_chapter_number(&number);
 
                 self.parse_list(rule, number.clone())
             })
@@ -72,21 +73,6 @@ impl SummaryFileSummarizer {
         chapter.number = chapter_number.clone();
 
         chapter
-    }
-
-    fn next_chapter_number<S>(number: S) -> String
-    where
-        S: ToString,
-    {
-        match number.to_string().rsplit_once(".") {
-            Some((rest, number_to_increase)) => {
-                format!(
-                    "{rest}.{}",
-                    (number_to_increase.parse::<u32>().unwrap() + 1).to_string()
-                )
-            }
-            None => (number.to_string().parse::<u32>().unwrap() + 1).to_string(),
-        }
     }
 }
 

@@ -1,4 +1,5 @@
 use super::{Summarizer, Summary};
+use crate::util;
 use crate::{Chapter, Item};
 use anyhow::{anyhow, Result};
 use std::fs;
@@ -70,7 +71,7 @@ impl FileTreeSummarizer {
                 );
 
                 summary.push(chapter);
-                chapter_number = FileTreeSummarizer::next_chapter_number(chapter_number);
+                chapter_number = util::next_chapter_number(chapter_number);
                 continue;
             }
 
@@ -94,36 +95,12 @@ impl FileTreeSummarizer {
         Ok(summary)
     }
 
-    /// It returns the next chapter number for the given chapter number. It increases the last number by one.
-    ///
-    /// # Example
-    ///
-    /// 3 -> 4
-    /// 1.2.3 -> 1.2.4
-    fn next_chapter_number(number: String) -> String {
-        let numbers = number.split(".").collect::<Vec<&str>>();
-
-        if numbers.len() == 1 {
-            return (numbers[0].parse::<u32>().unwrap() + 1).to_string();
-        }
-
-        let number_to_increase = number.split(".").last().unwrap();
-        let rest = number
-            .split(".")
-            .take(number.split(".").count() - 1)
-            .collect::<Vec<&str>>()
-            .join(".");
-        let increased_number = (number_to_increase.parse::<u32>().unwrap() + 1).to_string();
-
-        format!("{rest}.{increased_number}")
-    }
-
-    /// It return a formatted chapter title for the given file name. It capitalizes the first letter and removes the extension.
+    /// It returns a formatted chapter title for the given file name. It capitalizes the first letter and removes the extension.
     ///
     /// # Example
     ///
     /// chapter.md -> Chapter
-    /// chapter2.md -> Chapter1.1
+    /// chapter2.md -> Chapter2
     fn format_chapter_title(file_name: String) -> String {
         let file_name = file_name.replace(".md", "");
         let mut file_name_iter = file_name.chars();
@@ -159,7 +136,6 @@ impl FileTreeSummarizer {
 
         let chapter_name = path.file_name().unwrap().to_str().unwrap().to_string() + ".md";
 
-        // Check if there is file with the same name as the directory
         if path.join(&chapter_name).exists() {
             return Ok(path.join(&chapter_name));
         }
@@ -307,26 +283,6 @@ mod test {
         let summary = FileTreeSummarizer::new(temp_dir.path()).summarize()?;
 
         assert_eq!(expected, summary.items);
-
-        Ok(())
-    }
-
-    #[test]
-    fn it_should_return_the_next_chapter_number() -> Result<(), Box<dyn Error>> {
-        let number = String::from("1.2.3");
-        let next = FileTreeSummarizer::next_chapter_number(number);
-
-        assert_eq!(next, String::from("1.2.4"));
-
-        Ok(())
-    }
-
-    #[test]
-    fn it_should_return_the_next_chapter_number_when_it_is_single() -> Result<(), Box<dyn Error>> {
-        let number = String::from("1");
-        let next = FileTreeSummarizer::next_chapter_number(number);
-
-        assert_eq!(next, String::from("2"));
 
         Ok(())
     }

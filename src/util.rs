@@ -42,3 +42,24 @@ where
 {
     s.as_ref().chars().filter(|c| !c.is_whitespace()).collect()
 }
+
+/// Takes a chapter number and increases it's last component
+///
+/// # Example
+///
+/// 3 -> 4
+/// 1.2.3 -> 1.2.4
+pub fn next_chapter_number<S>(number: S) -> String
+where
+    S: ToString,
+{
+    match number.to_string().rsplit_once(".") {
+        Some((rest, number_to_increase)) => {
+            format!(
+                "{rest}.{}",
+                (number_to_increase.parse::<u32>().unwrap() + 1).to_string()
+            )
+        }
+        None => (number.to_string().parse::<u32>().unwrap() + 1).to_string(),
+    }
+}
