@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::path::Path;
+use std::path::PathBuf;
 
 /// All the configuration options for the vault wrapped in a single struct
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -53,9 +54,12 @@ impl Default for Config {
             enumerate: false,
             ignore: vec![],
             multiple_language: false,
+            src_dir: PathBuf::from("src"),
+            build_dir: PathBuf::from("build"),
         };
 
         let appearance = Appearance {
+            default_css: true,
             custom: vec![],
             default_theme: String::from("gruvbox-material"),
             themes: vec![],
@@ -87,11 +91,15 @@ pub struct General {
     pub ignore: Vec<String>,
     /// Should multiple languages be available?
     pub multiple_language: bool,
+    pub build_dir: PathBuf,
+    pub src_dir: PathBuf,
 }
 
 /// Appearance options for the generated site
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Appearance {
+    /// Should the default css be used?
+    pub default_css: bool,
     /// Paths to custom CSS files
     pub custom: Vec<String>,
     /// The theme that should be used by default

@@ -6,7 +6,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-    <link href="../styles/main.css" rel="stylesheet" />
+    <link href="/main.css" rel="stylesheet" />
+    {% for css in custom_css %}
+    <link href="{{css}}" rel="stylesheet" />
+    {% endfor %}
 </head>
 
 <body>

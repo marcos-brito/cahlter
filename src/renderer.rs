@@ -11,12 +11,12 @@ pub trait Renderer {
 }
 
 #[derive(Debug, Clone)]
-pub struct Context {
+pub struct RendererContext {
     pub content: Content,
     pub config: Config,
 }
 
-impl Context {
+impl RendererContext {
     pub fn new(content: Content, config: Config) -> Self {
         Self { content, config }
     }

@@ -2,7 +2,6 @@ pub mod content;
 
 use crate::config::Config;
 use crate::renderer::{self, AskamaRenderer, Renderer};
-use crate::util;
 use crate::Chapter;
 use anyhow::{Context, Result};
 use content::Content;
@@ -10,7 +9,7 @@ use serde_yaml;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub const STYLES_DIR: &str = "styles";
+static CSS: &[u8] = include_bytes!("../templates/css/main.css");
 pub const CONFIG_FILE: &str = "cahlter.yml";
 
 pub struct Vault {
@@ -76,7 +75,7 @@ impl Vault {
 
     pub fn build(&mut self) -> Result<()> {
         let content = Content::new(self.src_dir())?;
-        let context = renderer::Context::new(content.clone(), self.config.clone());
+        let context = renderer::RendererContext::new(content.clone(), self.config.clone());
         let renderer = AskamaRenderer::new(context);
         let chapters = content.chapters();
 
@@ -84,7 +83,17 @@ impl Vault {
             self.write_chapter(&chapter, renderer.clone(), self.build_dir())?;
         }
 
-        util::copy_dir(self.path.join(STYLES_DIR), self.build_dir())?;
+        if self.config.appearance.default_css {
+            fs::write(self.build_dir().join("main.css"), CSS)?;
+        }
+
+        for css_file in self.config.appearance.custom.iter() {
+            let file_name = Path::new(css_file)
+                .file_name()
+                .with_context(|| format!("Could not get the file name in {css_file}"))?;
+
+            fs::copy(self.path.join(css_file), self.build_dir().join(file_name))?;
+        }
 
         Ok(())
     }
@@ -232,6 +241,37 @@ mod test {
 
         assert!(vault.build_dir().join("chapter1.html").exists());
         assert!(vault.build_dir().join("chapter2.html").exists());
+        assert!(vault.build_dir().join("main.css").exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_should_build_the_vault_with_custom_css() -> Result<(), Box<dyn Error>> {
+        let temp_dir = tempdir()?;
+        let mut vault = Vault::new(temp_dir.path());
+
+        vault.config.appearance.default_css = false;
+        vault.config.appearance.custom = vec![
+            "./custom1.css".to_string(),
+            "./css/custom2.css".to_string(),
+            "./css/styles/custom3.css".to_string(),
+        ];
+        vault.init()?;
+
+        fs::create_dir_all(vault.path.join("css").join("styles"))?;
+        fs::write(vault.src_dir().join("chapter1.md"), "# Hello there")?;
+        fs::write(vault.path.join("custom1.css"), "")?;
+        fs::write(vault.path.join("css/custom2.css"), "")?;
+        fs::write(vault.path.join("css/styles/custom3.css"), "")?;
+
+        vault.build()?;
+
+        assert!(vault.build_dir().join("chapter1.html").exists());
+        assert!(!vault.build_dir().join("main.css").exists());
+        assert!(vault.build_dir().join("custom1.css").exists());
+        assert!(vault.build_dir().join("custom2.css").exists());
+        assert!(vault.build_dir().join("custom3.css").exists());
 
         Ok(())
     }

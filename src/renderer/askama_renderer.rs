@@ -1,7 +1,7 @@
-use super::{Context, Renderer};
+use super::{Renderer, RendererContext};
 use crate::config::Link;
 use crate::{Chapter, Item, Section};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use askama::Template;
 use std::fs;
 use std::path::Path;
@@ -40,15 +40,16 @@ struct Page<'a> {
     header: &'a String,
     sidebar: &'a String,
     content: &'a String,
+    custom_css: &'a Vec<String>,
 }
 
 #[derive(Debug, Clone)]
 pub struct AskamaRenderer {
-    context: Context,
+    context: RendererContext,
 }
 
 impl AskamaRenderer {
-    pub fn new(context: Context) -> Self {
+    pub fn new(context: RendererContext) -> Self {
         Self { context }
     }
 
@@ -128,6 +129,15 @@ impl Renderer for AskamaRenderer {
         let header = self.render_header()?;
         let sidebar = self.render_sidebar()?;
         let theme = &self.context.config.appearance.default_theme;
+        let mut custom_css = Vec::new();
+
+        for css in self.context.config.appearance.custom.iter() {
+            let file_name = Path::new(css)
+                .file_name()
+                .with_context(|| format!("Could not get the file name in {css}"))?;
+
+            custom_css.push("/".to_string() + &file_name.to_string_lossy().to_string());
+        }
 
         let markdown = fs::read_to_string(&chapter.content).unwrap();
         let parser = pulldown_cmark::Parser::new(&markdown);
@@ -140,6 +150,7 @@ impl Renderer for AskamaRenderer {
             header: &header,
             sidebar: &sidebar,
             content: &html,
+            custom_css: &custom_css,
         };
 
         return Ok(index.render()?);
