@@ -22,3 +22,5 @@ pulldown-cmark = "0.9.3"
 serde = {version="1.0.195", features=["derive"]}
 serde_yaml = "0.9.30"
 tempfile = "3.9.0"
+pest = "2.6"
+pest_derive = "2.6"
