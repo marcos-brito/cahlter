@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    - branches: ["main"]
+  pull_request:
+    - branches: ["main"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  strategy:
+    matrix:
+      toolchain:
+        - stable
+        - beta
+        - nightly
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      - run: cargo build --verbose
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      - run: cargo test --verbose
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      - run: rustup component add rustfmt
+      - run: cargo fmt --all --check
