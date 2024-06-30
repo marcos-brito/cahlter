@@ -31,16 +31,16 @@ impl Vault {
         }
     }
 
-    pub fn from_disk<P>(path: P) -> Vault
+    pub fn from_disk<P>(path: P) -> Result<Vault>
     where
         P: AsRef<Path>,
     {
-        let config = Config::from_disk(path.as_ref().join(CONFIG_FILE));
+        let config = Config::from_disk(path.as_ref().join(CONFIG_FILE))?;
 
-        Vault {
+        Ok(Vault {
             config,
             path: path.as_ref().to_path_buf(),
-        }
+        })
     }
 
     /// Initialize a new vault at the given path. It also updates the config
@@ -52,7 +52,7 @@ impl Vault {
 
         self.create()?;
         self.config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
-        self.config.save(self.path.join(CONFIG_FILE));
+        self.config.save(self.path.join(CONFIG_FILE))?;
 
         Ok(())
     }
@@ -91,9 +91,7 @@ impl Vault {
         fs::write(self.build_dir().join("index.js"), JS)?;
 
         for css_file in self.config.appearance.custom.iter() {
-            let file_name = Path::new(css_file)
-                .file_name()
-                .with_context(|| format!("Could not get the file name in {css_file}"))?;
+            let file_name = Path::new(css_file).file_name().unwrap();
 
             fs::copy(self.path.join(css_file), self.build_dir().join(file_name))?;
         }
@@ -117,24 +115,18 @@ impl Vault {
 
         match chapter.subchapters.is_empty() {
             true => {
-                let renderered = renderer.render(chapter).with_context(|| {
-                    format!("Could not render chapter at {:?}", chapter.content)
-                })?;
-
-                let _ = fs::write(destination.as_ref().join(file_name), renderered);
+                fs::write(
+                    destination.as_ref().join(&file_name),
+                    renderer.render(chapter)?,
+                )?;
             }
             false => {
                 let destination = self
                     .build_dir()
                     .join(chapter.content.parent().unwrap().file_stem().unwrap());
-
                 fs::create_dir(&destination)?;
 
-                let renderered = renderer.render(chapter).with_context(|| {
-                    format!("Could not render chapter at {:?}", chapter.content)
-                })?;
-
-                let _ = fs::write(destination.join(file_name), renderered);
+                fs::write(destination.join(&file_name), renderer.render(chapter)?)?;
 
                 for subchapter in chapter.subchapters.iter() {
                     self.write_chapter(&subchapter, renderer.clone(), &destination)?;
