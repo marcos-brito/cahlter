@@ -6,21 +6,21 @@
     <nav>
         <ul class="nav">
             {%- for link in links -%}
-                {%- match link.icon -%}
-                    {%- when Some with (icon) -%}
-                        <li class="nav--item">
-                            <a href="{{link.url}}">
-                                <i class="ti ti-{{icon}}"></i>
-                            </a>
-                        </li>
-                    {%- when None -%}
-                        <li class="nav--item">
-                            <a href="{{ link.url }}">{{ link.name }}</a>
-                        </li>
-                {%- endmatch -%}
+            {%- match link.icon -%}
+            {%- when Some with (icon) -%}
+            <li class="nav--item">
+                <a href="{{link.url}}">
+                    <i class="ti ti-{{icon}}"></i>
+                </a>
+            </li>
+            {%- when None -%}
+            <li class="nav--item">
+                <a href="{{ link.url }}">{{ link.name }}</a>
+            </li>
+            {%- endmatch -%}
             {%- endfor %}
             <li class="nav--item">
-                <i class="ti ti-settings-filled"></i>
+                <i class="ti ti-paint-filled theme-button"></i>
             </li>
         </ul>
 </header>

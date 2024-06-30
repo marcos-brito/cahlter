@@ -1,22 +1,31 @@
 <!doctype html>
 <html lang="en" class="{{theme}}">
-
-<head>
+  <head>
     <title></title>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
     <link href="/main.css" rel="stylesheet" />
     {% for css in custom_css %}
     <link href="{{css}}" rel="stylesheet" />
     {% endfor %}
-</head>
+  </head>
 
-<body>
+  <body>
     <div class="container">
-        {{header}} {{sidebar}}
-        <main class="main">{{content}}</main>
+      {{header}} {{sidebar}}
+      <main class="main">{{content}}</main>
     </div>
-</body>
-
+    <div class="theme-popup">
+      <ul class="theme-popup__items">
+        {% for theme in themes %}
+        <li class="theme-popup__item">{{theme}}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <script src="/index.js"></script>
+  </body>
 </html>

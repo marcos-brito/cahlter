@@ -9,7 +9,8 @@ use serde_yaml;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-static CSS: &[u8] = include_bytes!("../templates/css/main.css");
+static CSS: &[u8] = include_bytes!("../templates/main.css");
+static JS: &[u8] = include_bytes!("../templates/index.js");
 pub const CONFIG_FILE: &str = "cahlter.yml";
 
 pub struct Vault {
@@ -86,6 +87,8 @@ impl Vault {
         if self.config.appearance.default_css {
             fs::write(self.build_dir().join("main.css"), CSS)?;
         }
+
+        fs::write(self.build_dir().join("index.js"), JS)?;
 
         for css_file in self.config.appearance.custom.iter() {
             let file_name = Path::new(css_file)

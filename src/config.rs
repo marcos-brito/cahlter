@@ -61,8 +61,8 @@ impl Default for Config {
         let appearance = Appearance {
             default_css: true,
             custom: vec![],
-            default_theme: String::from("gruvbox-material"),
-            themes: vec![],
+            default_theme: String::from("gruvbox"),
+            themes: vec!["gruvbox".to_string(), "catppuccin".to_string()],
         };
 
         let config = Config {
@@ -105,16 +105,7 @@ pub struct Appearance {
     /// The theme that should be used by default
     pub default_theme: String,
     /// All available themes
-    pub themes: Vec<Theme>,
-}
-
-/// Holds information about a theme
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct Theme {
-    /// The theme's name
-    pub name: String,
-    /// Path to a CSS file
-    pub path: String,
+    pub themes: Vec<String>,
 }
 
 /// Holds a link that should be displayed in the header
