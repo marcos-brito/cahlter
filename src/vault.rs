@@ -76,7 +76,8 @@ impl Vault {
 
     pub fn build(&mut self) -> Result<()> {
         let content = Content::new(self.src_dir())?;
-        let context = renderer::RendererContext::new(content.clone(), self.config.clone());
+        let context =
+            renderer::RendererContext::new(content.clone(), self.config.clone(), self.src_dir());
         let renderer = AskamaRenderer::new(context);
         let chapters = content.chapters();
 

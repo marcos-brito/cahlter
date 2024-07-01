@@ -4,7 +4,7 @@ use crate::{Chapter, Item, Section};
 use anyhow::{Context, Result};
 use askama::Template;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Template)]
 #[template(path = "header.html")]
@@ -95,13 +95,7 @@ impl AskamaRenderer {
             .collect::<Result<Vec<String>>>()?
             .join("");
 
-        let target = chapter
-            .content
-            .file_stem()
-            .unwrap()
-            .to_string_lossy()
-            .to_string();
-
+        let target = self.get_chapter_target(chapter.content.clone())?;
         let title = match self.context.config.general.enumerate {
             true => format!("{} {}", chapter.number, chapter.title),
             false => chapter.title.clone(),
@@ -110,10 +104,19 @@ impl AskamaRenderer {
         let sidebar_chapter = SidebarChapter {
             title: &title,
             subchapters: &subchapters,
-            target: &(target + ".html"),
+            target: &target,
         };
 
         Ok(sidebar_chapter.render()?)
+    }
+
+    fn get_chapter_target(&self, path: PathBuf) -> Result<String> {
+        Ok("/".to_string()
+            + path
+                .strip_prefix(&self.context.src_dir)
+                .and_then(|url| Ok(url.with_extension("html")))?
+                .to_string_lossy()
+                .as_ref())
     }
 
     fn render_sidebar_section(&self, section: &Section) -> Result<String> {
@@ -155,5 +158,37 @@ impl Renderer for AskamaRenderer {
         };
 
         return Ok(index.render()?);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use anyhow::Result;
+    use std::path::PathBuf;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_get_chapter_target() -> Result<()> {
+        let tempdir = tempdir()?;
+        let context = RendererContext::new(
+            crate::Content::new(tempdir.path())?,
+            crate::config::Config::default(),
+            PathBuf::from("/some/dir/src"),
+        );
+        let renderer = AskamaRenderer::new(context);
+        let tests = vec![
+            ("/some/dir/src/file.txt", "/file.html"),
+            ("/some/dir/src/dir/file", "/dir/file.html"),
+        ];
+
+        for test in tests.iter() {
+            assert_eq!(
+                renderer.get_chapter_target(PathBuf::from(test.0))?,
+                test.1.to_string()
+            );
+        }
+
+        Ok(())
     }
 }
