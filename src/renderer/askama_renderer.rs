@@ -41,6 +41,7 @@ struct Page<'a> {
     sidebar: &'a String,
     content: &'a String,
     custom_css: &'a Vec<String>,
+    themes: &'a Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -128,7 +129,6 @@ impl Renderer for AskamaRenderer {
     fn render(&self, chapter: &Chapter) -> Result<String> {
         let header = self.render_header()?;
         let sidebar = self.render_sidebar()?;
-        let theme = &self.context.config.appearance.default_theme;
         let mut custom_css = Vec::new();
 
         for css in self.context.config.appearance.custom.iter() {
@@ -146,11 +146,12 @@ impl Renderer for AskamaRenderer {
         pulldown_cmark::html::push_html(&mut html, parser);
 
         let index = Page {
-            theme: &theme,
+            theme: &self.context.config.appearance.default_theme,
             header: &header,
             sidebar: &sidebar,
             content: &html,
             custom_css: &custom_css,
+            themes: &self.context.config.appearance.themes,
         };
 
         return Ok(index.render()?);
