@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::path::Path;
@@ -20,10 +20,10 @@ impl Config {
         P: AsRef<Path>,
     {
         let file =
-            std::fs::read_to_string(path).with_context(|| "Could not read the config file.")?;
+            std::fs::read_to_string(path).with_context(|| "Failed to read the config file.")?;
 
         let config: Config =
-            serde_yaml::from_str(&file).with_context(|| "Could not parse the config file")?;
+            serde_yaml::from_str(&file).with_context(|| "Failed to parse the config file")?;
 
         Ok(config)
     }
@@ -41,9 +41,11 @@ impl Config {
     where
         P: AsRef<Path>,
     {
-        let serialized = serde_yaml::to_string(self).unwrap();
+        let serialized = serde_yaml::to_string(self)
+            .with_context(|| anyhow!("Failed to parse the config file"))?;
 
-        std::fs::write(path, serialized).with_context(|| "Could not write the config file")?;
+        std::fs::write(path, serialized)
+            .with_context(|| anyhow!("Failed to write the config file"))?;
 
         Ok(())
     }
@@ -60,10 +62,10 @@ impl Default for Config {
             multiple_language: false,
             src_dir: PathBuf::from("src"),
             build_dir: PathBuf::from("build"),
+            use_default: true,
         };
 
         let appearance = Appearance {
-            default_css: true,
             custom: vec![],
             default_theme: String::from("gruvbox"),
             themes: vec!["gruvbox".to_string(), "catppuccin".to_string()],
@@ -95,6 +97,8 @@ pub struct General {
     pub ignore: Vec<String>,
     /// Should multiple languages be available?
     pub multiple_language: bool,
+    /// Should default css and js be used?
+    pub use_default: bool,
     pub build_dir: PathBuf,
     pub src_dir: PathBuf,
 }
@@ -102,8 +106,6 @@ pub struct General {
 /// Appearance options for the generated site
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Appearance {
-    /// Should the default css be used?
-    pub default_css: bool,
     /// Paths to custom CSS files
     pub custom: Vec<String>,
     /// The theme that should be used by default

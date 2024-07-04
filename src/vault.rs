@@ -3,7 +3,7 @@ pub mod content;
 use crate::config::Config;
 use crate::renderer::{self, AskamaRenderer, Renderer};
 use crate::Chapter;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use content::Content;
 use serde_yaml;
 use std::fs;
@@ -85,11 +85,12 @@ impl Vault {
             self.write_chapter(&chapter, renderer.clone(), self.build_dir())?;
         }
 
-        if self.config.appearance.default_css {
-            fs::write(self.build_dir().join("main.css"), CSS)?;
+        if self.config.general.use_default {
+            for static_file in vec![CSS, JS] {
+                fs::write(self.build_dir().join("main.css"), static_file)
+                    .with_context(|| anyhow!("Failed to write default files"))?;
+            }
         }
-
-        fs::write(self.build_dir().join("index.js"), JS)?;
 
         for css_file in self.config.appearance.custom.iter() {
             let file_name = Path::new(css_file).file_name().unwrap();
@@ -247,7 +248,7 @@ mod test {
         let temp_dir = tempdir()?;
         let mut vault = Vault::new(temp_dir.path());
 
-        vault.config.appearance.default_css = false;
+        vault.config.general.use_default = false;
         vault.config.appearance.custom = vec![
             "./custom1.css".to_string(),
             "./css/custom2.css".to_string(),
