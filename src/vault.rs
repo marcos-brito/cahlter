@@ -5,7 +5,7 @@ use crate::renderer::{self, AskamaRenderer, Renderer};
 use crate::Chapter;
 use anyhow::{anyhow, Context, Result};
 use content::Content;
-use serde_yaml;
+use log::warn;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -62,14 +62,10 @@ impl Vault {
 
         for dir in dirs {
             fs::create_dir_all(&dir)
-                .with_context(|| format!("Could not create {}", dir.display()))?;
+                .with_context(|| format!("Failed to create {}", dir.display()))?;
         }
 
-        fs::write(
-            self.path.join(CONFIG_FILE),
-            serde_yaml::to_string(&self.config)?,
-        )
-        .with_context(|| format!("Could not write {}.", self.path.join(CONFIG_FILE).display()))?;
+        self.config.save(self.path.join(CONFIG_FILE))?;
 
         Ok(())
     }
@@ -81,7 +77,19 @@ impl Vault {
         let renderer = AskamaRenderer::new(context);
         let chapters = content.chapters();
 
+        if !self.src_dir().exists() || !self.build_dir().exists() {
+            warn!(
+                "Missing source or build dir. Make sure to create {} and {}",
+                self.src_dir().display(),
+                self.build_dir().display()
+            )
+        }
+
         for chapter in chapters.iter() {
+            if !chapter.content.exists() {
+                warn!("Missing file: {}", chapter.content.display())
+            }
+
             self.write_chapter(&chapter, renderer.clone(), self.build_dir())?;
         }
 
@@ -93,9 +101,12 @@ impl Vault {
         }
 
         for css_file in self.config.appearance.custom.iter() {
-            let file_name = Path::new(css_file).file_name().unwrap();
+            let file_name = Path::new(css_file)
+                .file_name()
+                .with_context(|| anyhow!("Failed to extract file name from {css_file}"))?;
 
-            fs::copy(self.path.join(css_file), self.build_dir().join(file_name))?;
+            fs::copy(self.path.join(css_file), self.build_dir().join(file_name))
+                .with_context(|| anyhow!("Failed to copy custom css",))?;
         }
 
         Ok(())
@@ -108,12 +119,14 @@ impl Vault {
     {
         let file_name = chapter
             .content
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string()
-            + ".html";
+            .file_name()
+            .and_then(|name| Some(PathBuf::from(name).with_extension("html")))
+            .with_context(|| {
+                anyhow!(
+                    "Failed to extract the file name from {}",
+                    chapter.content.display()
+                )
+            })?;
 
         match chapter.subchapters.is_empty() {
             true => {

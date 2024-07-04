@@ -1,7 +1,7 @@
 use super::{Summarizer, Summary};
 use crate::util;
 use crate::{Chapter, Item};
-use anyhow::Result;
+use anyhow::{anyhow, Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -50,7 +50,8 @@ impl FileTreeSummarizer {
     where
         S: ToString,
     {
-        let dir_entries = fs::read_dir(&self.path)?;
+        let dir_entries = fs::read_dir(&self.path)
+            .with_context(|| anyhow!("Failed to read contentes of {}", self.path.display()))?;
         let mut chapter_number: String = initial_chapter_number.to_string();
 
         Ok(dir_entries
@@ -125,7 +126,7 @@ impl FileTreeSummarizer {
         }
 
         anyhow::bail!(
-            "Could not found content for chapter {}. Create a index or a summary.",
+            "Could not find content for chapter {}. Create a index or a summary.",
             path.as_ref().display()
         )
     }

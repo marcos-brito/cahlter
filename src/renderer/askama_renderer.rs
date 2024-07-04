@@ -1,7 +1,7 @@
 use super::{Renderer, RendererContext};
 use crate::config::Link;
 use crate::{Chapter, Item, Section};
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use askama::Template;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -114,7 +114,8 @@ impl AskamaRenderer {
         Ok("/".to_string()
             + path
                 .strip_prefix(&self.context.src_dir)
-                .and_then(|url| Ok(url.with_extension("html")))?
+                .and_then(|url| Ok(url.with_extension("html")))
+                .with_context(|| anyhow!("Failed to create the url for {}", path.display()))?
                 .to_string_lossy()
                 .as_ref())
     }
@@ -137,12 +138,13 @@ impl Renderer for AskamaRenderer {
         for css in self.context.config.appearance.custom.iter() {
             let file_name = Path::new(css)
                 .file_name()
-                .with_context(|| format!("Could not get the file name in {css}"))?;
+                .with_context(|| anyhow!("Failed to extract the file name from {css}"))?;
 
             custom_css.push("/".to_string() + &file_name.to_string_lossy().to_string());
         }
 
-        let markdown = fs::read_to_string(&chapter.content).unwrap();
+        let markdown = fs::read_to_string(&chapter.content)
+            .with_context(|| anyhow!("Failed to read contents of {}", chapter.content.display()))?;
         let parser = pulldown_cmark::Parser::new(&markdown);
         let mut html = String::new();
 
