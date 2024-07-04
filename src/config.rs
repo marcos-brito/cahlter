@@ -1,29 +1,31 @@
+use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_yaml;
 use std::path::Path;
+use std::path::PathBuf;
 
 /// All the configuration options for the vault wrapped in a single struct
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct Config {
     pub general: General,
     pub appearance: Appearance,
-    pub links: Option<Vec<Link>>,
-    pub languages: Option<Vec<Language>>,
+    pub links: Vec<Link>,
+    pub languages: Vec<Language>,
 }
 
 impl Config {
     /// Read a config file from disk and parse it
-    pub fn from_disk<P>(path: P) -> Config
+    pub fn from_disk<P>(path: P) -> Result<Config>
     where
         P: AsRef<Path>,
     {
         let file =
-            std::fs::read_to_string(path).expect("Could not read config file. Does it exist?");
+            std::fs::read_to_string(path).with_context(|| "Failed to read the config file.")?;
 
-        let config: Config = serde_yaml::from_str(&file)
-            .expect("Could not parse config file. Maybe it is not valid YAML?");
+        let config: Config =
+            serde_yaml::from_str(&file).with_context(|| "Failed to parse the config file")?;
 
-        config
+        Ok(config)
     }
 
     /// Update the config with the values from another config
@@ -35,12 +37,17 @@ impl Config {
     }
 
     /// Saves the config in the given path
-    pub fn save<P>(&self, path: P) -> ()
+    pub fn save<P>(&self, path: P) -> Result<()>
     where
         P: AsRef<Path>,
     {
-        let serialized = serde_yaml::to_string(self).unwrap();
-        std::fs::write(path, serialized).expect("Could not write config file");
+        let serialized = serde_yaml::to_string(self)
+            .with_context(|| anyhow!("Failed to parse the config file"))?;
+
+        std::fs::write(path, serialized)
+            .with_context(|| anyhow!("Failed to write the config file"))?;
+
+        Ok(())
     }
 }
 
@@ -53,19 +60,22 @@ impl Default for Config {
             enumerate: false,
             ignore: vec![],
             multiple_language: false,
+            src_dir: PathBuf::from("src"),
+            build_dir: PathBuf::from("build"),
+            use_default: true,
         };
 
         let appearance = Appearance {
             custom: vec![],
-            default_theme: String::new(),
-            themes: vec![],
+            default_theme: String::from("gruvbox"),
+            themes: vec!["gruvbox".to_string(), "catppuccin".to_string()],
         };
 
         let config = Config {
             general,
             appearance,
-            links: None,
-            languages: None,
+            links: vec![],
+            languages: vec![],
         };
 
         config
@@ -87,6 +97,10 @@ pub struct General {
     pub ignore: Vec<String>,
     /// Should multiple languages be available?
     pub multiple_language: bool,
+    /// Should default css and js be used?
+    pub use_default: bool,
+    pub build_dir: PathBuf,
+    pub src_dir: PathBuf,
 }
 
 /// Appearance options for the generated site
@@ -97,16 +111,7 @@ pub struct Appearance {
     /// The theme that should be used by default
     pub default_theme: String,
     /// All available themes
-    pub themes: Vec<Theme>,
-}
-
-/// Holds information about a theme
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
-pub struct Theme {
-    /// The theme's name
-    pub name: String,
-    /// Path to a CSS file
-    pub path: String,
+    pub themes: Vec<String>,
 }
 
 /// Holds a link that should be displayed in the header
@@ -132,16 +137,16 @@ pub struct Language {
 #[cfg(test)]
 mod test {
     use super::*;
-    use std::{error::Error, fs};
+    use anyhow::Result;
     use tempfile::tempdir;
 
     #[test]
-    fn it_should_write_a_config_file() -> Result<(), Box<dyn Error>> {
+    fn it_should_write_a_config_file() -> Result<()> {
         let temp_dir = tempdir()?;
         let config_path = temp_dir.path().join("test_config.yml");
         let config = Config::default();
 
-        config.save(&config_path);
+        config.save(&config_path)?;
 
         assert!(config_path.exists());
 
@@ -149,14 +154,14 @@ mod test {
     }
 
     #[test]
-    fn it_should_read_a_config_file() -> Result<(), Box<dyn Error>> {
+    fn it_should_read_a_config_file() -> Result<()> {
         let temp_dir = tempdir()?;
         let config_path = temp_dir.path().join("test_config.yml");
         let config = Config::default();
 
-        config.save(&config_path);
+        config.save(&config_path)?;
 
-        let read_config = Config::from_disk(&config_path);
+        let read_config = Config::from_disk(&config_path)?;
 
         assert_eq!(config, read_config);
 
@@ -164,14 +169,14 @@ mod test {
     }
 
     #[test]
-    fn it_should_write_and_read_a_config_file() -> Result<(), Box<dyn Error>> {
+    fn it_should_write_and_read_a_config_file() -> Result<()> {
         let temp_dir = tempdir()?;
         let config_path = temp_dir.path().join("test_config.yml");
         let config = Config::default();
 
-        config.save(&config_path);
+        config.save(&config_path)?;
 
-        let read_config = Config::from_disk(&config_path);
+        let read_config = Config::from_disk(&config_path)?;
 
         assert_eq!(config, read_config);
 
@@ -179,33 +184,7 @@ mod test {
     }
 
     #[test]
-    #[should_panic(expected = "Could not read config file. Does it exist?")]
-    fn it_should_panic_when_file_does_not_exist() {
-        let config_path = "non_existent_file.yml";
-
-        Config::from_disk(&config_path);
-    }
-
-    #[test]
-    #[should_panic(expected = "Could not parse config file. Maybe it is not valid YAML?")]
-    fn it_should_panic_if_config_is_not_valid_yaml() -> () {
-        let temp_dir = tempdir().unwrap();
-        let config_path = temp_dir.path().join("test_config.yml");
-        let config = r#"name: "John Doe" 
-        age: 25
-        city: "New York"
-        hasJob: true
-        hobbies:
-        - Reading
-        - Swimming"#;
-
-        fs::write(&config_path, config).unwrap();
-
-        Config::from_disk(&config_path);
-    }
-
-    #[test]
-    fn it_should_update_a_config() -> Result<(), Box<dyn Error>> {
+    fn it_should_update_a_config() -> Result<()> {
         let mut config = Config::default();
         let mut other = Config::default();
 

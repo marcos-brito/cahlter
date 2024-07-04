@@ -18,7 +18,17 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0.79"
 askama = "0.12.1"
+async-std = { version = "1.8.0", features = ["attributes"] }
+clap = "4.5.7"
+human-panic = "2.0.0"
 pulldown-cmark = "0.9.3"
 serde = {version="1.0.195", features=["derive"]}
 serde_yaml = "0.9.30"
 tempfile = "3.9.0"
+tide = "0.16.0"
+pest = "2.6"
+pest_derive = "2.6"
+env_logger = "0.11.3"
+log = {version = "0.4.22", features=["kv"]}
+is-terminal = "0.4.12"
+colored = "2.1.0"

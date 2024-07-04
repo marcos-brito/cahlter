@@ -1,11 +1,14 @@
 mod chapter;
 mod section;
 
-use crate::summary::{FileTreeSummarizer, Summary};
+use crate::summary::{FileTreeSummarizer, Summarizer, Summary, SummaryFileSummarizer};
+use anyhow::Result;
 pub use chapter::Chapter;
 pub use section::Section;
 use std::convert::From;
 use std::path::Path;
+
+const SUMMARY_FILE_NAMES: [&str; 3] = ["summary.md", "SUMMARY.MD", "Summary.md"];
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum Item {
@@ -25,18 +28,19 @@ impl From<Section> for Item {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Content {
     pub summary: Summary,
 }
 
 impl Content {
-    pub fn new<P>(path: P) -> Content
+    pub fn new<P>(path: P) -> Result<Content>
     where
         P: AsRef<Path>,
     {
-        let summary = Content::create_summary(path);
+        let summary = Content::create_summary(path)?;
 
-        Content { summary }
+        Ok(Content { summary })
     }
 
     // Just iterate over the summary and filter
@@ -63,18 +67,18 @@ impl Content {
             .collect()
     }
 
-    fn create_summary<P>(path: P) -> Summary
+    fn create_summary<P>(path: P) -> Result<Summary>
     where
         P: AsRef<Path>,
     {
         let path = path.as_ref().to_path_buf();
-        let has_summary_file = path.join("summary.md").exists();
 
-        if has_summary_file {
-            unimplemented!();
-        } else {
-            let summarizer = Box::new(FileTreeSummarizer::new(path));
-            Summary::new(summarizer)
+        for name in SUMMARY_FILE_NAMES {
+            if path.join(name).exists() {
+                return Ok(SummaryFileSummarizer::new(path.join(name)).summarize()?);
+            }
         }
+
+        Ok(FileTreeSummarizer::new(&path).summarize()?)
     }
 }

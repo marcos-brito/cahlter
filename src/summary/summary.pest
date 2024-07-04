@@ -1,0 +1,8 @@
+summary = _{ SOI ~ (NEWLINE* ~ (heading | list | link) ~ NEWLINE*)* ~ EOI}
+heading =  { "# " ~ text }
+list    =  { "- " ~ link ~ NEWLINE* ~ newlist* }
+link    =  { "[" ~ text ~ "]" ~ "(" ~ text ~ ")" }
+text    =  { (!(NEWLINE | "[" | "]" | "(" | ")") ~ ANY)* }
+indent  = _{ ("\t" | "  ")+ }
+
+newlist = _{ PEEK_ALL ~ PUSH(indent) ~ list ~ (PEEK_ALL ~ list)* ~ DROP }

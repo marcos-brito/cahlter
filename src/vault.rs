@@ -1,21 +1,19 @@
 pub mod content;
 
+use crate::config::Config;
+use crate::renderer::{self, AskamaRenderer, Renderer};
+use crate::Chapter;
+use anyhow::{anyhow, Context, Result};
+use content::Content;
+use log::warn;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
-use serde_yaml;
-
-use crate::config::Config;
-use crate::util;
-use content::Content;
-
-pub const BUILD_DIR: &str = "build";
-pub const SRC_DIR: &str = "src";
+static CSS: &[u8] = include_bytes!("../templates/main.css");
+static JS: &[u8] = include_bytes!("../templates/index.js");
 pub const CONFIG_FILE: &str = "cahlter.yml";
 
 pub struct Vault {
-    pub content: Option<Content>,
     pub config: Config,
     pub path: PathBuf,
 }
@@ -25,71 +23,134 @@ impl Vault {
     where
         P: AsRef<Path>,
     {
-        // FIX: it should first try to read from the disk and only if it fails use the default.
-        // Maybe a from_disk method?
         let config = Config::default();
-        let content = Vault::get_content(&path);
 
         Vault {
-            content,
             config,
             path: path.as_ref().to_path_buf(),
         }
     }
-    /// Initialize a new vault at the given path. It also updates the config
-    /// so that the title is the name of the directory.
-    pub fn init(&mut self) -> Result<()> {
-        let mut new_config = Config::default();
 
+    pub fn from_disk<P>(path: P) -> Result<Vault>
+    where
+        P: AsRef<Path>,
+    {
+        let config = Config::from_disk(path.as_ref().join(CONFIG_FILE))?;
+        let vault = Vault {
+            config,
+            path: path.as_ref().to_path_buf(),
+        };
+
+        if !vault.src_dir().exists() || !vault.build_dir().exists() {
+            warn!(
+                "Missing source or build dir. Make sure to create {} and {}",
+                vault.src_dir().display(),
+                vault.build_dir().display()
+            )
+        }
+
+        Ok(vault)
+    }
+
+    /// Initialize a new vault at the given path. It also updates the config
+    /// so the title is the name of the directory.
+    pub fn init(&mut self) -> Result<()> {
         if Vault::was_initialized(&self.path) {
             anyhow::bail!("calhter.yml already exists at {}", self.path.display());
         }
 
         self.create()?;
-        new_config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
-        self.config.update(new_config);
-        self.config.save(self.path.join(CONFIG_FILE));
+        self.config.general.title = self.path.file_name().unwrap().to_string_lossy().to_string();
+        self.config.save(self.path.join(CONFIG_FILE))?;
 
         Ok(())
     }
 
     fn create(&self) -> Result<()> {
-        fs::create_dir_all(&self.path).with_context(|| {
-            format!(
-                "Could not create {}. Maybe it's invalid or you don't have permission",
-                &self.path.display()
-            )
-        })?;
+        let dirs = vec![self.path.clone(), self.src_dir(), self.build_dir()];
 
-        util::create_dir_if_not_exists(self.path.join(BUILD_DIR)).with_context(|| {
-            format!("Could not create {}.", self.path.join(BUILD_DIR).display())
-        })?;
-        util::create_dir_if_not_exists(self.path.join(SRC_DIR))
-            .with_context(|| format!("Could not create {}.", self.path.join(SRC_DIR).display()))?;
+        for dir in dirs {
+            fs::create_dir_all(&dir)
+                .with_context(|| format!("Failed to create {}", dir.display()))?;
+        }
 
-        fs::write(
-            self.path.join(CONFIG_FILE),
-            serde_yaml::to_string(&Config::default())?,
-        )
-        .with_context(|| {
-            format!(
-                "Could not create {}.",
-                self.path.join(CONFIG_FILE).display()
-            )
-        })?;
+        self.config.save(self.path.join(CONFIG_FILE))?;
 
         Ok(())
     }
 
-    fn get_content<P>(path: P) -> Option<Content>
+    pub fn build(&mut self) -> Result<()> {
+        let content = Content::new(self.src_dir())?;
+        let context =
+            renderer::RendererContext::new(content.clone(), self.config.clone(), self.src_dir());
+        let renderer = AskamaRenderer::new(context);
+        let chapters = content.chapters();
+
+        for chapter in chapters.iter() {
+            if !chapter.content.exists() {
+                warn!("Missing file: {}", chapter.content.display())
+            }
+
+            self.write_chapter(&chapter, renderer.clone(), self.build_dir())?;
+        }
+
+        if self.config.general.use_default {
+            for static_file in vec![("main.css", CSS), ("index.js", JS)] {
+                fs::write(self.build_dir().join(static_file.0), static_file.1)
+                    .with_context(|| anyhow!("Failed to write default files"))?;
+            }
+        }
+
+        for css_file in self.config.appearance.custom.iter() {
+            let file_name = Path::new(css_file)
+                .file_name()
+                .with_context(|| anyhow!("Failed to extract file name from {css_file}"))?;
+
+            fs::copy(self.path.join(css_file), self.build_dir().join(file_name))
+                .with_context(|| anyhow!("Failed to copy custom css",))?;
+        }
+
+        Ok(())
+    }
+
+    fn write_chapter<R, P>(&self, chapter: &Chapter, renderer: R, destination: P) -> Result<()>
     where
+        R: Renderer + Clone,
         P: AsRef<Path>,
     {
-        if Vault::was_initialized(&path) {
-            Some(Content::new(path.as_ref().to_path_buf().join(SRC_DIR)))
-        } else {
-            None
+        let file_name = chapter
+            .content
+            .file_name()
+            .and_then(|name| Some(PathBuf::from(name).with_extension("html")))
+            .with_context(|| {
+                anyhow!(
+                    "Failed to extract the file name from {}",
+                    chapter.content.display()
+                )
+            })?;
+
+        match chapter.subchapters.is_empty() {
+            true => {
+                fs::write(
+                    destination.as_ref().join(&file_name),
+                    renderer.render(chapter)?,
+                )?;
+            }
+            false => {
+                let destination = self
+                    .build_dir()
+                    .join(chapter.content.parent().unwrap().file_stem().unwrap());
+                fs::create_dir(&destination)?;
+
+                fs::write(destination.join(&file_name), renderer.render(chapter)?)?;
+
+                for subchapter in chapter.subchapters.iter() {
+                    self.write_chapter(&subchapter, renderer.clone(), &destination)?;
+                }
+            }
         }
+
+        Ok(())
     }
 
     fn was_initialized<P>(path: P) -> bool
@@ -97,6 +158,14 @@ impl Vault {
         P: AsRef<Path>,
     {
         path.as_ref().to_path_buf().join(CONFIG_FILE).exists()
+    }
+
+    pub fn src_dir(&self) -> PathBuf {
+        self.path.join(&self.config.general.src_dir)
+    }
+
+    pub fn build_dir(&self) -> PathBuf {
+        self.path.join(&self.config.general.build_dir)
     }
 }
 
@@ -113,7 +182,7 @@ mod test {
 
         vault.init()?;
 
-        assert!(temp_dir.path().join("test_vault").exists());
+        assert!(vault.path.exists());
         assert!(vault.config.general.title == "test_vault");
 
         Ok(())
@@ -136,12 +205,12 @@ mod test {
 
         vault.create()?;
 
-        assert!(temp_dir.path().join("test_vault").join("build").exists());
-        assert!(temp_dir.path().join("test_vault").join("src").exists());
+        assert!(vault.src_dir().exists());
+        assert!(vault.build_dir().exists());
         assert!(temp_dir
             .path()
             .join("test_vault")
-            .join("cahlter.yml")
+            .join(CONFIG_FILE)
             .exists());
 
         Ok(())
@@ -164,6 +233,56 @@ mod test {
         vault.init()?;
 
         assert!(Vault::was_initialized(temp_dir.path().join("test_vault")));
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_should_build_the_vault() -> Result<(), Box<dyn Error>> {
+        let temp_dir = tempdir()?;
+        let mut vault = Vault::new(temp_dir.path());
+        vault.init()?;
+
+        fs::write(vault.src_dir().join("chapter1.md"), "# Hello there")?;
+        fs::write(
+            vault.src_dir().join("chapter2.md"),
+            "> Here is where the fun begins",
+        )?;
+        vault.build()?;
+
+        assert!(vault.build_dir().join("chapter1.html").exists());
+        assert!(vault.build_dir().join("chapter2.html").exists());
+        assert!(vault.build_dir().join("main.css").exists());
+
+        Ok(())
+    }
+
+    #[test]
+    fn it_should_build_the_vault_with_custom_css() -> Result<(), Box<dyn Error>> {
+        let temp_dir = tempdir()?;
+        let mut vault = Vault::new(temp_dir.path());
+
+        vault.config.general.use_default = false;
+        vault.config.appearance.custom = vec![
+            "./custom1.css".to_string(),
+            "./css/custom2.css".to_string(),
+            "./css/styles/custom3.css".to_string(),
+        ];
+        vault.init()?;
+
+        fs::create_dir_all(vault.path.join("css").join("styles"))?;
+        fs::write(vault.src_dir().join("chapter1.md"), "# Hello there")?;
+        fs::write(vault.path.join("custom1.css"), "")?;
+        fs::write(vault.path.join("css/custom2.css"), "")?;
+        fs::write(vault.path.join("css/styles/custom3.css"), "")?;
+
+        vault.build()?;
+
+        assert!(vault.build_dir().join("chapter1.html").exists());
+        assert!(!vault.build_dir().join("main.css").exists());
+        assert!(vault.build_dir().join("custom1.css").exists());
+        assert!(vault.build_dir().join("custom2.css").exists());
+        assert!(vault.build_dir().join("custom3.css").exists());
 
         Ok(())
     }

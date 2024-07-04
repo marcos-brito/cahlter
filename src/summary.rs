@@ -1,23 +1,22 @@
 mod file_tree_summarizer;
-
-pub use file_tree_summarizer::FileTreeSummarizer;
-
-use anyhow::Result;
+mod summary_file;
 
 use crate::Item;
+use anyhow::Result;
+pub use file_tree_summarizer::FileTreeSummarizer;
+pub use summary_file::SummaryFileSummarizer;
 
 pub trait Summarizer {
-    fn summarize(&self) -> Result<Vec<Item>>;
+    fn summarize(&self) -> Result<Summary>;
 }
 
+#[derive(Clone, PartialEq, Debug)]
 pub struct Summary {
     pub items: Vec<Item>,
 }
 
 impl Summary {
-    pub fn new(summarizer: Box<dyn Summarizer>) -> Summary {
-        Summary {
-            items: summarizer.summarize().unwrap(),
-        }
+    pub fn new(items: Vec<Item>) -> Summary {
+        Summary { items }
     }
 }

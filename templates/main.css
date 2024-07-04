@@ -1,10 +1,36 @@
-@import "theme.css";
-@import "variables.css";
+/* Variables */
+:root {
+    --header-height: 90px;
+    --sidebar-width: 250px;
+}
 
+/* Themes */
+.gruvbox {
+    --background: #282828;
+    --background-1: #1e1e1e;
+    --foreground: #ddc7a1;
+    --highlight: #689d6a;
+    --highlight-1: #7daea3;
+}
+
+.catppuccin {
+    --background: #1e1e2e;
+    --background-1: #11111b;
+    --foreground: #cdd6f4;
+    --highlight: #b4befe;
+    --highlight-1: #cba6f7;
+}
+
+/* Styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+a {
+    text-decoration: none;
+    color: var(--foreground);
 }
 
 body {
@@ -39,11 +65,6 @@ body {
     list-style: none;
 }
 
-.nav--item a {
-    text-decoration: none;
-    color: var(--foreground);
-}
-
 .ti {
     font-size: 24px;
 }
@@ -71,6 +92,7 @@ body {
 .sidebar {
     grid-area: sidebar;
     display: flex;
+    height: 100vh;
     flex-direction: column;
     background-color: var(--background-1);
     padding: 32px;
@@ -98,6 +120,10 @@ body {
     gap: 8px;
 }
 
+.table-of-contents__chapter--active {
+    color: var(--highlight);
+}
+
 .table-of-contents__chapter:hover {
     color: var(--highlight);
 }
@@ -115,10 +141,63 @@ body {
     background-color: var(--background);
 }
 
-.code-block {
+.main p {
+    font-size: 18px;
+}
+
+.main ul {
+    margin-left: 32px;
+}
+
+.main a {
+    color: var(--highlight);
+}
+
+.main pre {
     background-color: var(--background-1);
-    padding: 24px;
     border-radius: 8px;
+    padding: 32px 32px;
+}
+
+.main pre code {
+    font-weight: 600;
     font-size: 14px;
-    overflow-x: auto;
+}
+
+.main blockquote {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.main blockquote::before {
+    content: " ";
+    width: 4px;
+    height: 200%;
+    background-color: var(--highlight-1);
+}
+
+.theme-popup {
+    display: none;
+    background-color: var(--background-1);
+    position: absolute;
+    font-size: 14px;
+    padding: 16px;
+    border-radius: 8px;
+    width: 120px;
+    overflow-x: hidden;
+}
+
+.theme-popup__items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    list-style: none;
+}
+
+.theme-popup__item:hover {
+    color: var(--highlight);
+    cursor: pointer;
 }

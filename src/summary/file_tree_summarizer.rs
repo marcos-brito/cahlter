@@ -1,10 +1,11 @@
-use super::Summarizer;
+use super::{Summarizer, Summary};
+use crate::util;
 use crate::{Chapter, Item};
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-const SUPPORTED_CHAPTER_FILE_NAMES: [&str; 4] = ["index.md", "readme.md", "INDEX.md", "README.md"];
+const SUPPORTED_CHAPTER_FILE_NAMES: [&str; 4] = ["index", "readme", "INDEX", "README"];
 
 /// It creates a summary using the file tree. The ordering is random. It depends in what it finds first.
 /// It supports chapters and subchapters, but not sections. Each directory is a chapter and it must
@@ -47,85 +48,54 @@ impl FileTreeSummarizer {
     /// where the enumeration will start.
     fn find_chapters<S>(&self, initial_chapter_number: S) -> Result<Vec<Chapter>>
     where
-        S: Into<String>,
+        S: ToString,
     {
-        let dir_entries = fs::read_dir(&self.path)?;
-        let mut summary = Vec::new();
-        let mut chapter_number: String = initial_chapter_number.into();
+        let dir_entries = fs::read_dir(&self.path)
+            .with_context(|| anyhow!("Failed to read contentes of {}", self.path.display()))?;
+        let mut chapter_number: String = initial_chapter_number.to_string();
 
-        for entry in dir_entries {
-            let entry = entry?;
-            let entry_type = entry.file_type()?;
+        Ok(dir_entries
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
 
-            if FileTreeSummarizer::is_md_file(&entry)?
-                && !FileTreeSummarizer::is_parent_content(&entry)
-            {
+                if entry.file_type().ok()?.is_dir() {
+                    let chapter = Chapter::new(
+                        self.format_chapter_title(entry.path()),
+                        chapter_number.clone(),
+                        self.find_main_chapter_content(entry.path()).ok()?,
+                        FileTreeSummarizer::new(entry.path())
+                            .find_chapters(chapter_number.clone() + ".1")
+                            .ok()?,
+                    );
+
+                    return Some(chapter);
+                }
+
+                if self.is_parent_content(&entry.path()) {
+                    return None;
+                }
+
                 let chapter = Chapter::new(
-                    FileTreeSummarizer::format_chapter_title(
-                        entry.file_name().into_string().unwrap(),
-                    ),
+                    self.format_chapter_title(entry.path()),
                     chapter_number.clone(),
                     entry.path(),
                     Vec::new(),
                 );
+                chapter_number = util::next_chapter_number(&chapter_number);
 
-                summary.push(chapter);
-                chapter_number = FileTreeSummarizer::next_chapter_number(chapter_number);
-                continue;
-            }
-
-            if entry_type.is_dir() {
-                let subchapters = FileTreeSummarizer::new(entry.path())
-                    .find_chapters(format!("{}.1", chapter_number.clone()))?;
-
-                let chapter = Chapter::new(
-                    FileTreeSummarizer::format_chapter_title(
-                        entry.file_name().into_string().unwrap(),
-                    ),
-                    chapter_number.clone(),
-                    FileTreeSummarizer::find_main_chapter_content(entry.path())?,
-                    subchapters,
-                );
-
-                summary.push(chapter);
-            }
-        }
-
-        Ok(summary)
+                Some(chapter)
+            })
+            .collect::<Vec<Chapter>>())
     }
 
-    /// It returns the next chapter number for the given chapter number. It increases the last number by one.
-    ///
-    /// # Example
-    ///
-    /// 3 -> 4
-    /// 1.2.3 -> 1.2.4
-    fn next_chapter_number(number: String) -> String {
-        let numbers = number.split(".").collect::<Vec<&str>>();
-
-        if numbers.len() == 1 {
-            return (numbers[0].parse::<u32>().unwrap() + 1).to_string();
-        }
-
-        let number_to_increase = number.split(".").last().unwrap();
-        let rest = number
-            .split(".")
-            .take(number.split(".").count() - 1)
-            .collect::<Vec<&str>>()
-            .join(".");
-        let increased_number = (number_to_increase.parse::<u32>().unwrap() + 1).to_string();
-
-        format!("{rest}.{increased_number}")
-    }
-
-    /// It return a formatted chapter title for the given file name. It capitalizes the first letter and removes the extension.
+    /// It returns a formatted chapter title for the given file name. It capitalizes the first letter and removes the extension.
     ///
     /// # Example
     ///
     /// chapter.md -> Chapter
-    /// chapter2.md -> Chapter1.1
-    fn format_chapter_title(file_name: String) -> String {
-        let file_name = file_name.replace(".md", "");
+    /// chapter2.md -> Chapter2
+    fn format_chapter_title(&self, file_name: PathBuf) -> String {
+        let file_name = file_name.file_stem().unwrap().to_string_lossy();
         let mut file_name_iter = file_name.chars();
 
         match file_name_iter.next() {
@@ -136,81 +106,52 @@ impl FileTreeSummarizer {
 
     /// It returns the content (a path) for the given main chapter (a directory). It looks for multiple files:
     ///
-    /// - index.md
-    /// - readme.md
-    /// - INDEX.md
-    /// - README.md
+    /// - index
+    /// - readme
+    /// - INDEX
+    /// - README
     /// - A file with the same name as the directory
     ///
     /// If none are found it returns an error.
-    fn find_main_chapter_content<P>(path: P) -> Result<PathBuf>
+    fn find_main_chapter_content<P>(&self, path: P) -> Result<PathBuf>
     where
         P: AsRef<Path>,
     {
-        let path = path.as_ref().to_path_buf();
+        for entry in fs::read_dir(&path)? {
+            let entry = entry?;
 
-        for file_name in SUPPORTED_CHAPTER_FILE_NAMES.iter() {
-            let file_path = path.join(file_name);
-
-            if file_path.exists() {
-                return Ok(file_path);
+            if self.is_parent_content(Path::new(&entry.path())) {
+                return Ok(entry.path());
             }
         }
 
-        let chapter_name = path.file_name().unwrap().to_str().unwrap().to_string() + ".md";
-
-        // Check if there is file with the same name as the directory
-        if path.join(&chapter_name).exists() {
-            return Ok(path.join(&chapter_name));
-        }
-
-        Err(anyhow!(
-            "Could not found content for chapter {}. Create a index.md or a summary.md.",
-            path.display()
-        ))
+        anyhow::bail!(
+            "Could not find content for chapter {}. Create a index or a summary.",
+            path.as_ref().display()
+        )
     }
 
-    fn is_md_file(entry: &fs::DirEntry) -> Result<bool> {
-        Ok(entry.file_type()?.is_file() && entry.path().extension().unwrap() == "md")
-    }
-
-    // My brain is dead. This might be shit coding, but I can't tell. I see the resemblance between
-    // this and that other crap find_main_chapter_content and that is it.
-    fn is_parent_content(entry: &fs::DirEntry) -> bool {
-        let entry_path = entry.path();
-        let entry_name = entry_path.file_name().unwrap().to_str().unwrap();
-
-        for &file_name in SUPPORTED_CHAPTER_FILE_NAMES.iter() {
-            if entry_name == file_name {
+    // Is it safe to unwrap here?
+    fn is_parent_content(&self, path: &Path) -> bool {
+        for supported_name in SUPPORTED_CHAPTER_FILE_NAMES {
+            if path.file_stem().unwrap().to_string_lossy() == supported_name {
                 return true;
             }
         }
 
-        let chapter_name = entry_path
-            .parent()
-            .unwrap()
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string()
-            + ".md";
-
-        if chapter_name == entry_name {
-            return true;
-        }
-
-        false
+        path.parent().unwrap_or(Path::new("")).file_name().unwrap() == path.file_stem().unwrap()
     }
 }
 
 impl Summarizer for FileTreeSummarizer {
-    fn summarize(&self) -> Result<Vec<Item>> {
-        Ok(self
+    fn summarize(&self) -> Result<Summary> {
+        let items = self
             .find_chapters("1")?
             .iter()
             .map(|chapter| return Item::from(chapter.clone()))
-            .collect())
+            .collect();
+
+        Ok(Summary::new(items))
     }
 }
 
@@ -224,46 +165,43 @@ mod test {
     #[test]
     fn it_should_summarize_nested_chapters() -> Result<(), Box<dyn Error>> {
         let temp_dir = tempdir()?;
-        let main_chapter_path = temp_dir.path().join("chapter1");
-
-        let subchapters = vec![
-            Chapter::new(
-                "Chapter1.1",
-                "1.1",
-                main_chapter_path.join("chapter1.1.md"),
-                Vec::new(),
-            ),
-            Chapter::new(
-                "Chapter1.2",
-                "1.2",
-                main_chapter_path.join("chapter1.2.md"),
-                Vec::new(),
-            ),
-            Chapter::new(
-                "Chapter1.3",
-                "1.3",
-                main_chapter_path.join("chapter1.3.md"),
-                Vec::new(),
-            ),
-        ];
-
-        let expected = Item::from(Chapter::new(
+        let chapter_path = temp_dir.path().join("chapter1");
+        let expected = Chapter::new(
             "Chapter1",
             "1",
-            main_chapter_path.join("chapter1.md"),
-            subchapters.clone(),
-        ));
+            chapter_path.join("chapter1.md"),
+            vec![
+                Chapter::new(
+                    "Chapter1.1",
+                    "1.1",
+                    chapter_path.join("chapter1.1.md"),
+                    Vec::new(),
+                ),
+                Chapter::new(
+                    "Chapter1.2",
+                    "1.2",
+                    chapter_path.join("chapter1.2.md"),
+                    Vec::new(),
+                ),
+                Chapter::new(
+                    "Chapter1.3",
+                    "1.3",
+                    chapter_path.join("chapter1.3.md"),
+                    Vec::new(),
+                ),
+            ],
+        );
 
-        fs::create_dir(&main_chapter_path)?;
-
-        for subchapter in subchapters.iter() {
+        fs::create_dir(&chapter_path)?;
+        fs::write(&chapter_path.join("chapter1.md"), "")?;
+        for subchapter in expected.subchapters.iter() {
             fs::write(temp_dir.path().join(&subchapter.content), "")?;
         }
-        fs::write(&main_chapter_path.join("chapter1.md"), "")?;
 
-        let summary = FileTreeSummarizer::new(temp_dir.path()).summarize()?;
-
-        assert_eq!(vec![expected], summary);
+        assert_eq!(
+            vec![expected],
+            FileTreeSummarizer::new(temp_dir.path()).find_chapters("1")?
+        );
 
         Ok(())
     }
@@ -288,7 +226,13 @@ mod test {
             Item::from(Chapter::new(
                 "Chapter3",
                 "3",
-                temp_dir.path().join("chapter3.md"),
+                temp_dir.path().join("chapter3"),
+                Vec::new(),
+            )),
+            Item::from(Chapter::new(
+                "Chapter4",
+                "4",
+                temp_dir.path().join("chapter4.txt"),
                 Vec::new(),
             )),
         ];
@@ -304,37 +248,26 @@ mod test {
 
         let summary = FileTreeSummarizer::new(temp_dir.path()).summarize()?;
 
-        assert_eq!(expected, summary);
-
-        Ok(())
-    }
-
-    #[test]
-    fn it_should_return_the_next_chapter_number() -> Result<(), Box<dyn Error>> {
-        let number = String::from("1.2.3");
-        let next = FileTreeSummarizer::next_chapter_number(number);
-
-        assert_eq!(next, String::from("1.2.4"));
-
-        Ok(())
-    }
-
-    #[test]
-    fn it_should_return_the_next_chapter_number_when_it_is_single() -> Result<(), Box<dyn Error>> {
-        let number = String::from("1");
-        let next = FileTreeSummarizer::next_chapter_number(number);
-
-        assert_eq!(next, String::from("2"));
+        assert_eq!(expected, summary.items);
 
         Ok(())
     }
 
     #[test]
     fn it_should_format_the_file_name() -> Result<(), Box<dyn Error>> {
-        let file_name = String::from("chapter1.md");
-        let processed_file_name = FileTreeSummarizer::format_chapter_title(file_name);
+        let summarizer = FileTreeSummarizer::new("");
+        let tests = vec![
+            ("chapter.md", "Chapter"),
+            ("intro", "Intro"),
+            ("file.txt", "File"),
+        ];
 
-        assert_eq!(processed_file_name, String::from("Chapter1"));
+        for test in tests.iter() {
+            assert_eq!(
+                summarizer.format_chapter_title(PathBuf::from(test.0)),
+                test.1
+            );
+        }
 
         Ok(())
     }
@@ -343,13 +276,14 @@ mod test {
     // RIGHT?
     #[test]
     fn it_should_return_the_content_for_the_given_main_chapter() -> Result<(), Box<dyn Error>> {
+        let summarizer = FileTreeSummarizer::new("");
         let temp_dir = tempdir()?;
         let main_chapter_path = temp_dir.path().join("chapter1");
 
         fs::create_dir(&main_chapter_path)?;
         fs::write(&main_chapter_path.join("index.md"), "")?;
 
-        let content = FileTreeSummarizer::find_main_chapter_content(&main_chapter_path)?;
+        let content = summarizer.find_main_chapter_content(&main_chapter_path)?;
 
         assert_eq!(content, main_chapter_path.join("index.md"));
 
@@ -359,13 +293,14 @@ mod test {
     #[test]
     fn it_should_return_the_content_for_the_given_main_chapter_when_it_has_the_dir_name(
     ) -> Result<(), Box<dyn Error>> {
+        let summarizer = FileTreeSummarizer::new("");
         let temp_dir = tempdir()?;
         let main_chapter_path = temp_dir.path().join("chapter1");
 
         fs::create_dir(&main_chapter_path)?;
         fs::write(&main_chapter_path.join("chapter1.md"), "")?;
 
-        let content = FileTreeSummarizer::find_main_chapter_content(&main_chapter_path)?;
+        let content = summarizer.find_main_chapter_content(&main_chapter_path)?;
 
         assert_eq!(content, main_chapter_path.join("chapter1.md"));
 
