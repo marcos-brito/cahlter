@@ -71,12 +71,6 @@ impl Vault {
     }
 
     pub fn build(&mut self) -> Result<()> {
-        let content = Content::new(self.src_dir())?;
-        let context =
-            renderer::RendererContext::new(content.clone(), self.config.clone(), self.src_dir());
-        let renderer = AskamaRenderer::new(context);
-        let chapters = content.chapters();
-
         if !self.src_dir().exists() || !self.build_dir().exists() {
             warn!(
                 "Missing source or build dir. Make sure to create {} and {}",
@@ -84,6 +78,12 @@ impl Vault {
                 self.build_dir().display()
             )
         }
+
+        let content = Content::new(self.src_dir())?;
+        let context =
+            renderer::RendererContext::new(content.clone(), self.config.clone(), self.src_dir());
+        let renderer = AskamaRenderer::new(context);
+        let chapters = content.chapters();
 
         for chapter in chapters.iter() {
             if !chapter.content.exists() {
