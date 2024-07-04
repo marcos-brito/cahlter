@@ -100,26 +100,26 @@ mod test {
             Item::from(Chapter::new(
                 "Intro",
                 "",
-                dir.path().join("summary.md").join("./intro.md"),
+                dir.path().join("./intro.md"),
                 vec![],
             )),
             Item::from(Chapter::new(
                 "Preface",
                 "",
-                dir.path().join("summary.md").join("./preface.md"),
+                dir.path().join("./preface.md"),
                 vec![],
             )),
             Item::from(Chapter::new(
                 "Chapter 1",
                 "1",
-                dir.path().join("summary.md").join("./chapter1.md"),
+                dir.path().join("./chapter1.md"),
                 vec![],
             )),
             Item::from(Section::new("Section")),
             Item::from(Chapter::new(
                 "Chapter 2",
                 "2",
-                dir.path().join("summary.md").join("./chapter2.md"),
+                dir.path().join("./chapter2.md"),
                 vec![],
             )),
         ];
@@ -152,29 +152,23 @@ mod test {
             Item::from(Chapter::new(
                 "Chapter 1",
                 "1",
-                dir.path().join("summary.md").join("./chapter1.md"),
+                dir.path().join("./chapter1.md"),
                 vec![
                     Chapter::new(
                         "Chapter 1.1",
                         "1.1",
-                        dir.path()
-                            .join("summary.md")
-                            .join("./chapter1/chapter1.1.md"),
+                        dir.path().join("./chapter1/chapter1.1.md"),
                         vec![Chapter::new(
                             "Chapter 1.1.1",
                             "1.1.1",
-                            dir.path()
-                                .join("summary.md")
-                                .join("./chapter1/chapter1.1/chapter1.1.1.md"),
+                            dir.path().join("./chapter1/chapter1.1/chapter1.1.1.md"),
                             vec![],
                         )],
                     ),
                     Chapter::new(
                         "Chapter 1.2",
                         "1.2",
-                        dir.path()
-                            .join("summary.md")
-                            .join("./chapter1/chapter1.2.md"),
+                        dir.path().join("./chapter1/chapter1.2.md"),
                         vec![],
                     ),
                 ],
@@ -182,7 +176,7 @@ mod test {
             Item::from(Chapter::new(
                 "Chapter 2",
                 "2",
-                dir.path().join("summary.md").join("chapter2.md"),
+                dir.path().join("chapter2.md"),
                 vec![],
             )),
             Item::from(Section::new("Section")),
