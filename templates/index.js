@@ -39,8 +39,20 @@ function setupThemeButton() {
     window.addEventListener("resize", () => (popup.style.display = "none"));
 }
 
+function highlightSummaryitem() {
+    let url = window.location.href;
+    let items = document.querySelectorAll(".table-of-contents__chapter");
+
+    for (let item of items) {
+        if (item.parentElement.href === url) {
+            item.classList.add("table-of-contents__chapter--active");
+        }
+    }
+}
+
 if (localStorage.getItem("colorscheme")) {
     changeColorscheme(localStorage.getItem("colorscheme"));
 }
 
 setupThemeButton();
+window.addEventListener("load", highlightSummaryitem());

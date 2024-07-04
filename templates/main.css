@@ -1,195 +1,203 @@
 /* Variables */
 :root {
-  --header-height: 90px;
-  --sidebar-width: 250px;
+    --header-height: 90px;
+    --sidebar-width: 250px;
 }
 
 /* Themes */
 .gruvbox {
-  --background: #282828;
-  --background-1: #1e1e1e;
-  --foreground: #ddc7a1;
-  --highlight: #689d6a;
-  --highlight-1: #7daea3;
+    --background: #282828;
+    --background-1: #1e1e1e;
+    --foreground: #ddc7a1;
+    --highlight: #689d6a;
+    --highlight-1: #7daea3;
 }
 
 .catppuccin {
-  --background: #1e1e2e;
-  --background-1: #11111b;
-  --foreground: #cdd6f4;
-  --highlight: #b4befe;
-  --highlight-1: #cba6f7;
+    --background: #1e1e2e;
+    --background-1: #11111b;
+    --foreground: #cdd6f4;
+    --highlight: #b4befe;
+    --highlight-1: #cba6f7;
 }
 
 /* Styles */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
 a {
-  text-decoration: none;
-  color: var(--foreground);
+    text-decoration: none;
+    color: var(--foreground);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+    background-color: var(--background);
+    color: var(--foreground);
 }
 
 .container {
-  display: grid;
-  grid-template-columns: var(--sidebar-width) auto;
-  grid-template-rows: var(--header-height) auto;
-  grid-template-areas:
-    "sidebar header"
-    "sidebar main";
+    display: grid;
+    grid-template-columns: var(--sidebar-width) auto;
+    grid-template-rows: var(--header-height) auto;
+    grid-template-areas:
+        "sidebar header"
+        "sidebar main";
 }
 
 .header {
-  grid-area: header;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px;
-  background-color: var(--background-1);
+    grid-area: header;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    background-color: var(--background-1);
 }
 
 .nav {
-  display: flex;
-  gap: 12px;
+    display: flex;
+    gap: 12px;
 }
 
 .nav--item {
-  list-style: none;
+    list-style: none;
 }
 
 .ti {
-  font-size: 24px;
+    font-size: 24px;
 }
 
 .search {
-  display: flex;
-  align-items: center;
-  background-color: var(--background);
-  color: var(--foreground);
-  border-radius: 8px;
-  height: 40px;
-  width: 20%;
-  padding: 12px;
-  gap: 12px;
+    display: flex;
+    align-items: center;
+    background-color: var(--background);
+    color: var(--foreground);
+    border-radius: 8px;
+    height: 40px;
+    width: 20%;
+    padding: 12px;
+    gap: 12px;
 }
 
 .search input {
-  background-color: var(--background);
-  color: var(--foreground);
-  border: none;
-  outline: none;
-  width: 100%;
+    background-color: var(--background);
+    color: var(--foreground);
+    border: none;
+    outline: none;
+    width: 100%;
 }
 
 .sidebar {
-  grid-area: sidebar;
-  display: flex;
-  height: 100vh;
-  flex-direction: column;
-  background-color: var(--background-1);
-  padding: 32px;
-  gap: 32px;
-  /* why is not working? css == 😠*/
-  resize: horizontal;
+    grid-area: sidebar;
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+    background-color: var(--background-1);
+    padding: 32px;
+    gap: 32px;
+    /* why is not working? css == 😠*/
+    resize: horizontal;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: semibold;
-  margin-bottom: 24px;
+    font-size: 24px;
+    font-weight: semibold;
+    margin-bottom: 24px;
 }
 
 .table-of-contents {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 }
 
 .table-of-contents__container {
-  display: flex;
-  flex-direction: column;
-  margin-left: 12px;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    margin-left: 12px;
+    gap: 8px;
+}
+
+.table-of-contents__chapter--active {
+    color: var(--highlight);
 }
 
 .table-of-contents__chapter:hover {
-  color: var(--highlight);
+    color: var(--highlight);
 }
 
 .table-of-contents__section {
-  color: var(--highlight-1);
+    color: var(--highlight-1);
 }
 
 .main {
-  grid-area: main;
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-  padding: 64px;
-  background-color: var(--background);
+    grid-area: main;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    padding: 64px;
+    background-color: var(--background);
+}
+
+.main p {
+    font-size: 18px;
 }
 
 .main ul {
-  margin-left: 32px;
+    margin-left: 32px;
 }
 
 .main a {
-  color: var(--highlight);
+    color: var(--highlight);
 }
 
 .main pre {
-  background-color: var(--background-1);
-  border-radius: 8px;
-  padding: 32px 32px;
+    background-color: var(--background-1);
+    border-radius: 8px;
+    padding: 32px 32px;
 }
 
 .main pre code {
-  font-weight: 600;
-  font-size: 14px;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 .main blockquote {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-top: 16px;
-  margin-bottom: 16px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-top: 16px;
+    margin-bottom: 16px;
 }
 
 .main blockquote::before {
-  content: " ";
-  width: 4px;
-  height: 200%;
-  background-color: var(--highlight-1);
+    content: " ";
+    width: 4px;
+    height: 200%;
+    background-color: var(--highlight-1);
 }
 
 .theme-popup {
-  display: none;
-  background-color: var(--background-1);
-  position: absolute;
-  font-size: 14px;
-  padding: 16px;
-  border-radius: 8px;
-  width: 120px;
-  overflow-x: hidden;
+    display: none;
+    background-color: var(--background-1);
+    position: absolute;
+    font-size: 14px;
+    padding: 16px;
+    border-radius: 8px;
+    width: 120px;
+    overflow-x: hidden;
 }
 
 .theme-popup__items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    list-style: none;
 }
 
 .theme-popup__item:hover {
-  color: var(--highlight);
-  cursor: pointer;
+    color: var(--highlight);
+    cursor: pointer;
 }
