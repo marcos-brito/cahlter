@@ -55,7 +55,12 @@ impl SummaryFileSummarizer {
         let title = rules.next().unwrap().as_str();
         let content = rules.next().unwrap().as_str();
 
-        Chapter::new(title, "", self.path.join(content), vec![])
+        Chapter::new(
+            title,
+            "",
+            self.path.parent().unwrap_or(Path::new("")).join(content),
+            vec![],
+        )
     }
 
     fn parse_list(&self, rules: Pair<Rule>, chapter_number: String) -> Chapter {
