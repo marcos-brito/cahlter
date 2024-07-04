@@ -36,11 +36,20 @@ impl Vault {
         P: AsRef<Path>,
     {
         let config = Config::from_disk(path.as_ref().join(CONFIG_FILE))?;
-
-        Ok(Vault {
+        let vault = Vault {
             config,
             path: path.as_ref().to_path_buf(),
-        })
+        };
+
+        if !vault.src_dir().exists() || !vault.build_dir().exists() {
+            warn!(
+                "Missing source or build dir. Make sure to create {} and {}",
+                vault.src_dir().display(),
+                vault.build_dir().display()
+            )
+        }
+
+        Ok(vault)
     }
 
     /// Initialize a new vault at the given path. It also updates the config
@@ -71,14 +80,6 @@ impl Vault {
     }
 
     pub fn build(&mut self) -> Result<()> {
-        if !self.src_dir().exists() || !self.build_dir().exists() {
-            warn!(
-                "Missing source or build dir. Make sure to create {} and {}",
-                self.src_dir().display(),
-                self.build_dir().display()
-            )
-        }
-
         let content = Content::new(self.src_dir())?;
         let context =
             renderer::RendererContext::new(content.clone(), self.config.clone(), self.src_dir());
