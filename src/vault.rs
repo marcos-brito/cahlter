@@ -94,8 +94,8 @@ impl Vault {
         }
 
         if self.config.general.use_default {
-            for static_file in vec![CSS, JS] {
-                fs::write(self.build_dir().join("main.css"), static_file)
+            for static_file in vec![("main.css", CSS), ("index.js", JS)] {
+                fs::write(self.build_dir().join(static_file.0), static_file.1)
                     .with_context(|| anyhow!("Failed to write default files"))?;
             }
         }
